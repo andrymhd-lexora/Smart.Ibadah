@@ -6,13 +6,13 @@ export type Rank = {
 };
 
 export const RANKS: Rank[] = [
-  { name: 'Warrior', minExp: 0, icon: '⚔️', color: '#94A3B8' },
-  { name: 'Elite', minExp: 1000, icon: '🛡️', color: '#10B981' },
-  { name: 'Master', minExp: 3000, icon: '⭐', color: '#3B82F6' },
-  { name: 'Grandmaster', minExp: 7000, icon: '💎', color: '#8B5CF6' },
-  { name: 'Epic', minExp: 15000, icon: '🔥', color: '#EC4899' },
-  { name: 'Legend', minExp: 30000, icon: '🐉', color: '#F59E0B' },
-  { name: 'Mythic', minExp: 60000, icon: '👑', color: '#EF4444' },
+  { name: 'Pejuang', minExp: 0, icon: '⚔️', color: '#94A3B8' },
+  { name: 'Elit', minExp: 1000, icon: '🛡️', color: '#10B981' },
+  { name: 'Ahli', minExp: 3000, icon: '⭐', color: '#3B82F6' },
+  { name: 'Pakar', minExp: 7000, icon: '💎', color: '#8B5CF6' },
+  { name: 'Epik', minExp: 15000, icon: '🔥', color: '#EC4899' },
+  { name: 'Legenda', minExp: 30000, icon: '🐉', color: '#F59E0B' },
+  { name: 'Mitos', minExp: 60000, icon: '👑', color: '#EF4444' },
 ];
 
 export const EXP_VALUES = {

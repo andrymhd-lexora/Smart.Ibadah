@@ -39,7 +39,7 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-secondary rounded-full border">
             <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-            <span className="text-xs font-bold">{user.streak} Days</span>
+            <span className="text-xs font-bold">{user.streak} Hari</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 bg-background/50 rounded-full border border-white/10">
@@ -58,15 +58,15 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 glass-card">
-              <DropdownMenuLabel className="font-headline">My Account</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-headline">Akun Saya</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                <span>Profile</span>
+                <span>Profil</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onLogout} className="flex items-center gap-2 text-destructive">
                 <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+                <span>Keluar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

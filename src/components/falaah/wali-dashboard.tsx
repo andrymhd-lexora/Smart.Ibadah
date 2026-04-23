@@ -41,8 +41,8 @@ export function WaliDashboard() {
     if (!studentId) return;
     setLinked(true);
     toast({
-      title: "Student Linked!",
-      description: `Successfully linked with student ID ${studentId}.`,
+      title: "Santri Terhubung!",
+      description: `Berhasil terhubung dengan ID Santri ${studentId}.`,
     });
   };
 
@@ -53,9 +53,9 @@ export function WaliDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LinkIcon className="w-5 h-5 text-primary" />
-              Link Student
+              Hubungkan Santri
             </CardTitle>
-            <CardDescription>Enter your child's Student ID to start monitoring.</CardDescription>
+            <CardDescription>Masukkan ID Santri anak Anda untuk mulai memantau.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -66,7 +66,7 @@ export function WaliDashboard() {
                 className="bg-secondary/30"
               />
             </div>
-            <Button className="w-full bg-primary font-bold" onClick={handleLink}>Connect Account</Button>
+            <Button className="w-full bg-primary font-bold" onClick={handleLink}>Hubungkan Akun</Button>
           </CardContent>
         </Card>
       </div>
@@ -80,20 +80,19 @@ export function WaliDashboard() {
           <Heart className="w-6 h-6 text-primary fill-primary" />
         </div>
         <div>
-          <h2 className="text-2xl font-headline font-bold">Wali Monitoring</h2>
-          <p className="text-muted-foreground text-sm">Real-time update for <span className="text-foreground font-bold">{MOCK_CHILD.name}</span></p>
+          <h2 className="text-2xl font-headline font-bold">Pemantauan Wali</h2>
+          <p className="text-muted-foreground text-sm">Pembaruan waktu nyata untuk <span className="text-foreground font-bold">{MOCK_CHILD.name}</span></p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Child Profile Summary */}
         <Card className="glass-card md:col-span-1">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">Current Status</CardTitle>
+              <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">Status Saat Ini</CardTitle>
               <Badge className="bg-orange-500/10 text-orange-500 border-none">
                 <Flame className="w-3 h-3 mr-1 fill-current" />
-                {MOCK_CHILD.streak} Days
+                {MOCK_CHILD.streak} Hari
               </Badge>
             </div>
           </CardHeader>
@@ -111,7 +110,7 @@ export function WaliDashboard() {
             
             <div className="space-y-2 text-left pt-4 border-t border-white/5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Monthly Progress</span>
+                <span className="text-muted-foreground">Progres Bulanan</span>
                 <span className="text-primary font-bold">+1,200 EXP</span>
               </div>
               <Progress value={65} className="h-1.5" />
@@ -119,14 +118,13 @@ export function WaliDashboard() {
           </CardContent>
         </Card>
 
-        {/* Real-time Activity Feed */}
         <Card className="glass-card md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              Activity Feed
+              Riwayat Aktivitas
             </CardTitle>
-            <CardDescription>Recent religious activities completed today</CardDescription>
+            <CardDescription>Aktivitas ibadah yang baru saja diselesaikan hari ini</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-white/5">
@@ -134,7 +132,7 @@ export function WaliDashboard() {
                 { activity: 'Sholat Maghrib', time: '18:15', exp: 50, icon: <CheckCircle2 className="w-4 h-4 text-primary" /> },
                 { activity: 'Setoran Hafalan Al-Kauthar', time: '16:30', exp: 200, icon: <Award className="w-4 h-4 text-accent" /> },
                 { activity: 'Sholat Ashar', time: '15:20', exp: 50, icon: <CheckCircle2 className="w-4 h-4 text-primary" /> },
-                { activity: 'Tilawah (2 Pages)', time: '14:45', exp: 200, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
+                { activity: 'Tilawah (2 Halaman)', time: '14:45', exp: 200, icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                   <div className="flex items-center gap-4">
@@ -154,7 +152,7 @@ export function WaliDashboard() {
               ))}
             </div>
             <div className="p-4 text-center">
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">View Full History <ChevronRight className="w-3 h-3 ml-1" /></Button>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">Lihat Riwayat Lengkap <ChevronRight className="w-3 h-3 ml-1" /></Button>
             </div>
           </CardContent>
         </Card>
@@ -162,7 +160,7 @@ export function WaliDashboard() {
 
       <footer className="text-center pt-8">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
-          Developed for Rumah Tahfidz Ikhsan
+          Dikembangkan untuk Rumah Tahfidz Ikhsan
         </p>
       </footer>
     </div>

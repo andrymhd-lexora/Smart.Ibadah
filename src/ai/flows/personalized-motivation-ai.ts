@@ -1,34 +1,34 @@
 'use server';
 /**
- * @fileOverview A Genkit flow for generating personalized motivational messages.
+ * @fileOverview Flow Genkit untuk menghasilkan pesan motivasi yang dipersonalisasi dalam Bahasa Indonesia.
  *
- * - getPersonalizedMotivation - A function that handles the personalized motivation generation process.
- * - PersonalizedMotivationInput - The input type for the getPersonalizedMotivation function.
- * - PersonalizedMotivationOutput - The return type for the getPersonalizedMotivation function.
+ * - getPersonalizedMotivation - Fungsi yang menangani proses pembuatan motivasi.
+ * - PersonalizedMotivationInput - Tipe input untuk fungsi getPersonalizedMotivation.
+ * - PersonalizedMotivationOutput - Tipe output untuk fungsi getPersonalizedMotivation.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PersonalizedMotivationInputSchema = z.object({
-  name: z.string().describe("The user's name."),
-  currentExp: z.number().describe('The user\'s current experience points.'),
+  name: z.string().describe("Nama pengguna."),
+  currentExp: z.number().describe('Poin pengalaman pengguna saat ini.'),
   expNeededForNextRank: z
     .number()
-    .describe('The experience points needed to reach the next rank.'),
+    .describe('Poin pengalaman yang dibutuhkan untuk mencapai peringkat berikutnya.'),
   nextRankName: z
     .string()
-    .describe('The name of the next rank the user is aiming for.'),
+    .describe('Nama peringkat berikutnya yang dituju pengguna.'),
   suggestedActivity: z
     .string()
-    .describe('A specific activity to suggest to the user for encouragement.'),
+    .describe('Aktivitas spesifik untuk disarankan kepada pengguna sebagai penyemangat.'),
 });
 export type PersonalizedMotivationInput = z.infer<
   typeof PersonalizedMotivationInputSchema
 >;
 
 const PersonalizedMotivationOutputSchema = z.object({
-  message: z.string().describe('A personalized motivational message.'),
+  message: z.string().describe('Pesan motivasi yang dipersonalisasi.'),
 });
 export type PersonalizedMotivationOutput = z.infer<
   typeof PersonalizedMotivationOutputSchema
@@ -44,18 +44,18 @@ const personalizedMotivationPrompt = ai.definePrompt({
   name: 'personalizedMotivationPrompt',
   input: {schema: PersonalizedMotivationInputSchema},
   output: {schema: PersonalizedMotivationOutputSchema},
-  prompt: `Generate a personalized motivational message for the user based on their progress.
+  prompt: `Hasilkan pesan motivasi yang dipersonalisasi untuk pengguna berdasarkan kemajuan mereka.
 
-Here are the user's details:
-Name: {{{name}}}
-Current Experience Points: {{{currentExp}}}
-Experience Points Needed for Next Rank: {{{expNeededForNextRank}}}
-Next Rank: {{{nextRankName}}}
-Suggested Activity: {{{suggestedActivity}}}
+Detail pengguna:
+Nama: {{{name}}}
+EXP Saat Ini: {{{currentExp}}}
+EXP yang Dibutuhkan untuk Peringkat Berikutnya: {{{expNeededForNextRank}}}
+Peringkat Berikutnya: {{{nextRankName}}}
+Aktivitas yang Disarankan: {{{suggestedActivity}}}
 
-Craft a warm and encouraging message. For example, you could say: "Assalamu'alaikum [Name], you are [expNeededForNextRank] EXP away from reaching Rank [nextRankName]! Let's complete your [suggestedActivity]!"
+Buatlah pesan yang hangat dan menyemangat dalam Bahasa Indonesia. Contoh: "Assalamu'alaikum [Nama], kamu tinggal [expNeededForNextRank] EXP lagi untuk mencapai peringkat [nextRankName]! Semangat ya, jangan lupa selesaikan [suggestedActivity] hari ini!"
 
-Ensure the message is inspiring and encourages the user to continue their Ibadah journey.`,
+Pastikan pesannya inspiratif dan mendorong pengguna untuk terus beristiqomah dalam perjalanan ibadah mereka.`,
 });
 
 const personalizedMotivationFlow = ai.defineFlow(

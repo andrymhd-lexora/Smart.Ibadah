@@ -55,8 +55,8 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
           name: user.name,
           currentExp: user.totalExp,
           expNeededForNextRank: expNeeded,
-          nextRankName: nextRank?.name || "Max Rank",
-          suggestedActivity: "Tahajjud prayer"
+          nextRankName: nextRank?.name || "Peringkat Maksimal",
+          suggestedActivity: "Sholat Tahajjud"
         });
         setMotivation(result.message);
       } catch (e) {
@@ -87,14 +87,13 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
   const handleSave = () => {
     toast({
-      title: "Log Saved",
-      description: "Your Ibadah progress has been successfully recorded!",
+      title: "Laporan Disimpan",
+      description: "Progres ibadahmu telah berhasil dicatat!",
     });
   };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Rank Progress Header */}
       <Card className="glass-card overflow-hidden border-none relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-destructive"></div>
         <CardHeader className="pb-2">
@@ -102,7 +101,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             <div className="space-y-1">
               <CardTitle className="text-2xl font-headline flex items-center gap-2">
                 <span className="text-3xl">{currentRank.icon}</span>
-                {currentRank.name} Rank
+                Peringkat {currentRank.name}
               </CardTitle>
               <CardDescription className="text-muted-foreground flex items-center gap-1">
                 <Trophy className="w-3 h-3 text-accent" />
@@ -112,10 +111,10 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             <div className="text-right">
               {nextRank ? (
                 <p className="text-xs font-medium text-accent uppercase tracking-wider">
-                  {expNeeded.toLocaleString()} EXP to {nextRank.name}
+                  {expNeeded.toLocaleString()} EXP lagi ke {nextRank.name}
                 </p>
               ) : (
-                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">MAX RANK</Badge>
+                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">PERINGKAT MAKSIMAL</Badge>
               )}
             </div>
           </div>
@@ -123,14 +122,13 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         <CardContent>
           <Progress value={expProgress} className="h-3 bg-secondary" />
           
-          {/* AI Insight Box */}
           <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 items-start">
             <div className="bg-primary/20 p-2 rounded-lg">
               <BrainCircuit className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-sm italic leading-relaxed text-foreground/90">
-                {loadingMotivation ? "Asking Ustadz AI for encouragement..." : motivation}
+                {loadingMotivation ? "Menanyakan Ustadz AI untuk motivasi..." : motivation}
               </p>
             </div>
           </div>
@@ -138,17 +136,15 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Daily Tracker */}
         <Card className="glass-card lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-primary" />
-              Daily Tracker
+              Pelacak Harian
             </CardTitle>
-            <CardDescription>Check your daily prayers and activities</CardDescription>
+            <CardDescription>Pantau sholat harian dan aktivitasmu</CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            {/* Sholat Wajib */}
             <div className="space-y-3">
               <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Sholat Wajib</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -173,10 +169,9 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               </div>
             </div>
 
-            {/* Sunnah & Activities */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Sunnah & Other</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Sunnah & Lainnya</h4>
                 <div className="space-y-2">
                   {[...PRAYERS_SUNNAH, ...DAILY_IBADAH].map(item => (
                     <div key={item} className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-white/5">
@@ -210,51 +205,49 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                 </div>
               </div>
 
-              {/* Murottal Tracker */}
               <div className="space-y-3">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Audio & Focus</h4>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Audio & Fokus</h4>
                 <div className="p-4 rounded-xl bg-accent/5 border border-accent/20 space-y-4">
                   <div className="flex items-center gap-3">
                     <Volume2 className="w-5 h-5 text-accent" />
-                    <span className="text-sm font-bold">Murottal Playtime</span>
+                    <span className="text-sm font-bold">Waktu Murottal</span>
                   </div>
                   <div className="flex items-end gap-2">
                     <div className="flex-1 space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Minutes listening today</Label>
+                      <Label className="text-xs text-muted-foreground">Menit mendengarkan hari ini</Label>
                       <Input 
                         type="number" 
                         className="bg-background/50" 
-                        placeholder="e.g. 30"
+                        placeholder="contoh: 30"
                         value={log.activities.murottalMinutes || ''}
                         onChange={(e) => setLog(p => ({...p, activities: {...p.activities, murottalMinutes: parseInt(e.target.value) || 0}}))}
                       />
                     </div>
-                    <div className="pb-1 text-xs text-muted-foreground">mins</div>
+                    <div className="pb-1 text-xs text-muted-foreground">menit</div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">Tip: Listening to Murottal helps your memory and focus.</p>
+                  <p className="text-[10px] text-muted-foreground italic">Tips: Mendengarkan Murottal membantu hafalan dan fokusmu.</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Quran Section */}
         <div className="space-y-6">
           <Card className="glass-card border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-primary" />
-                Quran Journal
+                Jurnal Quran
               </CardTitle>
-              <CardDescription>Track your Tilawah & Memorization</CardDescription>
+              <CardDescription>Pantau Tilawah & Hafalanmu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">Tilawah Progress</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">Progres Tilawah</Label>
                 <div className="flex gap-2">
                   <Input 
                     type="number" 
-                    placeholder="Pages read" 
+                    placeholder="Halaman dibaca" 
                     className="bg-secondary/30"
                     value={log.activities.quranPages || ''}
                     onChange={(e) => setLog(p => ({...p, activities: {...p.activities, quranPages: parseInt(e.target.value) || 0}}))}
@@ -268,21 +261,21 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold uppercase text-muted-foreground">Setoran Hafalan</Label>
-                  {log.isVerified && <Badge className="bg-primary/20 text-primary border-primary/20">Verified</Badge>}
-                  {log.isRevised && <Badge className="bg-destructive/20 text-destructive border-destructive/20">Needs Revision</Badge>}
+                  {log.isVerified && <Badge className="bg-primary/20 text-primary border-primary/20">Terverifikasi</Badge>}
+                  {log.isRevised && <Badge className="bg-destructive/20 text-destructive border-destructive/20">Butuh Revisi</Badge>}
                 </div>
                 <Textarea 
-                  placeholder="Paste verses or type your recent memorization..."
+                  placeholder="Tempel ayat atau ketik hafalan terbarumu..."
                   className="min-h-[120px] bg-secondary/30 text-sm leading-relaxed"
                   value={log.activities.hafalanText}
                   onChange={(e) => setLog(p => ({...p, activities: {...p.activities, hafalanText: e.target.value}}))}
                 />
-                <p className="text-[10px] text-muted-foreground">Your Ustadz will verify this for extra EXP bonus.</p>
+                <p className="text-[10px] text-muted-foreground">Ustadzmu akan memverifikasi ini untuk bonus EXP tambahan.</p>
               </div>
 
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6" onClick={handleSave}>
                 <Send className="w-4 h-4 mr-2" />
-                Submit Daily Log
+                Kirim Laporan Harian
               </Button>
             </CardContent>
           </Card>
@@ -291,14 +284,14 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <History className="w-4 h-4 text-muted-foreground" />
-                Recent History
+                Riwayat Terbaru
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
-                    <span className="text-muted-foreground">May {10-i}, 2024</span>
+                    <span className="text-muted-foreground">Mei {10-i}, 2024</span>
                     <span className="font-bold text-primary">+450 EXP</span>
                   </div>
                 ))}
@@ -310,7 +303,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
       <footer className="text-center pt-8">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
-          Developed for Rumah Tahfidz Ikhsan
+          Dikembangkan untuk Rumah Tahfidz Ikhsan
         </p>
       </footer>
     </div>

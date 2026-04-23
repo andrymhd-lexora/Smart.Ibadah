@@ -56,16 +56,16 @@ export function UstadzDashboard() {
 
   const handleVerify = (bonus: boolean) => {
     toast({
-      title: bonus ? "Mumtaz Verified!" : "Hafalan Verified",
-      description: `Student ${selectedStudent?.name} has been updated. ${bonus ? '+200 Bonus EXP awarded.' : ''}`,
+      title: bonus ? "Terverifikasi Mumtaz!" : "Hafalan Terverifikasi",
+      description: `Santri ${selectedStudent?.name} telah diperbarui. ${bonus ? '+200 Bonus EXP diberikan.' : ''}`,
     });
     setSelectedStudent(null);
   };
 
   const handleRevision = () => {
     toast({
-      title: "Revision Requested",
-      description: `Note sent to ${selectedStudent?.name}`,
+      title: "Revisi Diminta",
+      description: `Catatan telah dikirim ke ${selectedStudent?.name}`,
       variant: "default"
     });
     setSelectedStudent(null);
@@ -75,14 +75,14 @@ export function UstadzDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-headline font-bold">Instructor Console</h2>
-          <p className="text-muted-foreground text-sm">Manage your students and verify their progress.</p>
+          <h2 className="text-2xl font-headline font-bold">Konsol Pengajar</h2>
+          <p className="text-muted-foreground text-sm">Kelola santri dan verifikasi progres mereka.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="Search student..." 
+              placeholder="Cari santri..." 
               className="pl-9 glass-card w-full md:w-[250px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,32 +95,30 @@ export function UstadzDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Stats Summary */}
         <Card className="glass-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
-              Class Summary
+              Ringkasan Kelas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="text-2xl font-bold text-primary">{MOCK_STUDENTS.length}</div>
-                <div className="text-[10px] text-muted-foreground uppercase">Total Students</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Total Santri</div>
               </div>
               <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                 <div className="text-2xl font-bold text-accent">5</div>
-                <div className="text-[10px] text-muted-foreground uppercase">Pending Setoran</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Setoran Menunggu</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Legend */}
         <Card className="glass-card lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Class Ranks</CardTitle>
+            <CardTitle className="text-sm">Peringkat Kelas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -135,20 +133,19 @@ export function UstadzDashboard() {
         </Card>
       </div>
 
-      {/* Student List */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-lg">Student Management</CardTitle>
+          <CardTitle className="text-lg">Manajemen Santri</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-white/5">
-                <TableHead className="font-bold">Student Name</TableHead>
-                <TableHead className="font-bold">Rank</TableHead>
+                <TableHead className="font-bold">Nama Santri</TableHead>
+                <TableHead className="font-bold">Peringkat</TableHead>
                 <TableHead className="font-bold">Total EXP</TableHead>
                 <TableHead className="font-bold">Streak</TableHead>
-                <TableHead className="font-bold text-right">Actions</TableHead>
+                <TableHead className="font-bold text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -166,7 +163,7 @@ export function UstadzDashboard() {
                     <TableCell className="font-mono text-xs">{student.totalExp.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/10 border-none">
-                        {student.streak} days
+                        {student.streak} hari
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -178,21 +175,21 @@ export function UstadzDashboard() {
                             className="text-primary hover:text-primary hover:bg-primary/10"
                             onClick={() => setSelectedStudent(student)}
                           >
-                            Review Setoran
+                            Tinjau Setoran
                             <ExternalLink className="w-3 h-3 ml-2" />
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="glass-card border-white/10 sm:max-w-[500px]">
                           <DialogHeader>
-                            <DialogTitle className="font-headline">Review Memorization</DialogTitle>
+                            <DialogTitle className="font-headline">Tinjau Hafalan</DialogTitle>
                             <DialogDescription>
-                              Student: <span className="text-foreground font-bold">{selectedStudent?.name}</span>
+                              Santri: <span className="text-foreground font-bold">{selectedStudent?.name}</span>
                             </DialogDescription>
                           </DialogHeader>
                           
                           <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                              <h4 className="text-xs font-bold uppercase text-muted-foreground">Submission (Surah & Verse)</h4>
+                              <h4 className="text-xs font-bold uppercase text-muted-foreground">Kiriman (Surah & Ayat)</h4>
                               <div className="p-4 rounded-lg bg-secondary/50 border italic text-sm leading-relaxed">
                                 "Inna a'tainakal kauthar. Fasalli lirabbika wanhar. Inna syani'aka huwal abtar."
                                 <br />- Surah Al-Kauthar (1-3)
@@ -200,9 +197,9 @@ export function UstadzDashboard() {
                             </div>
                             
                             <div className="space-y-2">
-                              <h4 className="text-xs font-bold uppercase text-muted-foreground">Internal Feedback (Optional)</h4>
+                              <h4 className="text-xs font-bold uppercase text-muted-foreground">Umpan Balik (Opsional)</h4>
                               <Textarea 
-                                placeholder="Write revision notes or encouragement here..."
+                                placeholder="Tulis catatan revisi atau penyemangat di sini..."
                                 value={verificationNote}
                                 onChange={(e) => setVerificationNote(e.target.value)}
                                 className="bg-secondary/30"
@@ -217,7 +214,7 @@ export function UstadzDashboard() {
                               onClick={handleRevision}
                             >
                               <AlertCircle className="w-4 h-4 mr-2" />
-                              Need Revision
+                              Butuh Revisi
                             </Button>
                             <Button 
                               variant="outline"
@@ -225,7 +222,7 @@ export function UstadzDashboard() {
                               onClick={() => handleVerify(false)}
                             >
                               <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Verify Only
+                              Verifikasi Saja
                             </Button>
                             <Button 
                               className="bg-primary text-primary-foreground font-bold"
@@ -248,7 +245,7 @@ export function UstadzDashboard() {
 
       <footer className="text-center pt-8">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
-          Developed for Rumah Tahfidz Ikhsan
+          Dikembangkan untuk Rumah Tahfidz Ikhsan
         </p>
       </footer>
     </div>
