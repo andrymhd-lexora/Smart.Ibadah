@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react";
@@ -5,40 +6,41 @@ import { UserProfile, IbadahLog } from "@/lib/types";
 import { 
   getRankByExp, 
   getNextRank, 
-  PRAYERS_WAJIB, 
-  PRAYERS_SUNNAH, 
-  DAILY_IBADAH, 
   EXP_VALUES 
 } from "@/lib/constants";
 import { 
-  CheckCircle2, 
-  BookOpen, 
-  Sparkles, 
-  History, 
   Trophy,
   BrainCircuit,
-  Volume2,
-  Send,
-  ScrollText
+  Target,
+  Headphones,
+  BookOpen,
+  ScrollText,
+  HandHeart,
+  CheckCircle2,
+  LayoutDashboard,
+  Clock,
+  ArrowRight,
+  ChevronRight,
+  Flame,
+  Star
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { getPersonalizedMotivation } from "@/ai/flows/personalized-motivation-ai";
+import { cn } from "@/lib/utils";
 
 interface SantriDashboardProps {
   user: UserProfile;
   initialLog: IbadahLog;
 }
 
+type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
+
 export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
-  const [log, setLog] = useState<IbadahLog>(initialLog);
+  const [activeTab, setActiveTab] = useState<SantriTab>('ringkasan');
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
 
@@ -56,7 +58,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
           currentExp: user.totalExp,
           expNeededForNextRank: expNeeded,
           nextRankName: nextRank?.name || "Peringkat Maksimal",
-          suggestedActivity: "Sholat Tahajjud"
+          suggestedActivity: "Tugas Hafalan Baru"
         });
         setMotivation(result.message);
       } catch (e) {
@@ -65,241 +67,177 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         setLoadingMotivation(false);
       }
     }
-    fetchMotivation();
-  }, [user.totalExp, expNeeded, nextRank?.name, user.name]);
+    if (activeTab === 'ringkasan') fetchMotivation();
+  }, [user.totalExp, expNeeded, nextRank?.name, user.name, activeTab]);
 
-  const toggleActivity = (type: keyof IbadahLog['activities'], item: string) => {
-    setLog(prev => {
-      const activities = { ...prev.activities };
-      if (Array.isArray(activities[type])) {
-        const list = activities[type] as string[];
-        if (list.includes(item)) {
-          activities[type] = list.filter(i => i !== item);
-        } else {
-          activities[type] = [...list, item];
-        }
-      } else if (typeof activities[type] === 'boolean') {
-        (activities[type] as any) = !activities[type];
-      }
-      return { ...prev, activities };
-    });
-  };
-
-  const handleSave = () => {
-    toast({
-      title: "Laporan Disimpan",
-      description: "Progres ibadahmu telah berhasil dicatat!",
-    });
-  };
+  const navItems = [
+    { id: 'ringkasan', label: 'Ringkasan', icon: LayoutDashboard },
+    { id: 'tugas-guru', label: 'Tugas Guru', icon: Target },
+    { id: 'talaqqi', label: 'Talaqqi', icon: Headphones },
+    { id: 'tahfidz', label: 'Tahfidz', icon: BookOpen },
+    { id: 'hadits', label: 'Hadits', icon: ScrollText },
+    { id: 'doa', label: 'Do\'a', icon: HandHeart },
+    { id: 'mutabaah', label: 'Mutaba\'ah', icon: CheckCircle2 },
+    { id: 'rank', label: 'Rank', icon: Trophy },
+  ];
 
   return (
     <div className="space-y-6 pb-12">
-      <Card className="glass-card overflow-hidden border-none relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-destructive"></div>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl font-headline flex items-center gap-2">
-                <span className="text-3xl">{currentRank.icon}</span>
-                Peringkat {currentRank.name}
-              </CardTitle>
-              <CardDescription className="text-muted-foreground flex items-center gap-1">
-                <Trophy className="w-3 h-3 text-accent" />
-                {user.totalExp.toLocaleString()} Total EXP
-              </CardDescription>
-            </div>
-            <div className="text-right">
-              {nextRank ? (
-                <p className="text-xs font-medium text-accent uppercase tracking-wider">
-                  {expNeeded.toLocaleString()} EXP lagi ke {nextRank.name}
-                </p>
-              ) : (
-                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">PERINGKAT MAKSIMAL</Badge>
-              )}
-            </div>
+      {/* Sub-Navigation Bar */}
+      <Card className="glass-card border-none bg-card/40 overflow-hidden">
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex p-2 gap-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as SantriTab)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                  activeTab === item.id 
+                    ? "bg-primary text-primary-foreground shadow-lg" 
+                    : "bg-transparent text-muted-foreground hover:bg-white/5"
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            ))}
           </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={expProgress} className="h-3 bg-secondary" />
-          
-          <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 items-start">
-            <div className="bg-primary/20 p-2 rounded-lg">
-              <BrainCircuit className="w-5 h-5 text-primary" />
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </Card>
+
+      {activeTab === 'ringkasan' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Header Summary Card */}
+          <Card className="glass-card overflow-hidden border-none relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-destructive"></div>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-2xl font-headline flex items-center gap-2">
+                    <span className="text-3xl">{currentRank.icon}</span>
+                    {currentRank.name}
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground flex items-center gap-1">
+                    <Star className="w-3 h-3 text-accent fill-accent" />
+                    {user.totalExp.toLocaleString()} Total EXP
+                  </CardDescription>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 mb-1">
+                    <Flame className="w-3 h-3 mr-1 fill-current" />
+                    {user.streak} Hari Streak
+                  </Badge>
+                  {nextRank && (
+                    <p className="text-[10px] font-bold text-accent uppercase tracking-wider block">
+                      {expNeeded.toLocaleString()} EXP lagi ke {nextRank.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Progress value={expProgress} className="h-3 bg-secondary" />
+              
+              <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 items-start cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setActiveTab('tugas-guru')}>
+                <div className="bg-primary/20 p-2 rounded-lg">
+                  <BrainCircuit className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm italic leading-relaxed text-foreground/90">
+                    {loadingMotivation ? "Menghubungi Ustadz AI..." : motivation}
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Key Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-primary/20">
+              <Target className="w-8 h-8 text-primary" />
+              <div>
+                <div className="text-2xl font-bold">12</div>
+                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Tugas Menunggu</div>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('tugas-guru')}>
+                Lihat Semua <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Card>
+
+            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-accent/20">
+              <Clock className="w-8 h-8 text-accent" />
+              <div>
+                <div className="text-2xl font-bold">85%</div>
+                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Kehadiran Talaqqi</div>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('talaqqi')}>
+                Detail Absensi <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Card>
+
+            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-destructive/20">
+              <BookOpen className="w-8 h-8 text-destructive" />
+              <div>
+                <div className="text-2xl font-bold">Juz 30</div>
+                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Capaian Tahfidz</div>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('tahfidz')}>
+                Jurnal Hafalan <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Card>
+          </div>
+        </div>
+      ) : activeTab === 'tugas-guru' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Tasks Page Content - Following Image Request */}
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex items-start gap-4">
+            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-lg">
+              <Target className="w-6 h-6" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm italic leading-relaxed text-foreground/90">
-                {loadingMotivation ? "Menanyakan Ustadz AI untuk motivasi..." : motivation}
+            <div>
+              <h2 className="text-xl font-bold text-primary-foreground flex items-center gap-2">
+                Tugas Hafalan dari Guru
+              </h2>
+              <p className="text-sm text-primary-foreground/80 mt-1">
+                Setor hafalan untuk setiap target yang diberikan gurumu.
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="glass-card lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-primary" />
-              Pelacak Harian
-            </CardTitle>
-            <CardDescription>Pantau sholat harian dan aktivitasmu</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Sholat Wajib</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {PRAYERS_WAJIB.map(prayer => (
-                  <label 
-                    key={prayer} 
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                      log.activities.prayers.includes(prayer) 
-                      ? 'bg-primary/10 border-primary text-primary' 
-                      : 'bg-secondary/30 border-white/5 hover:border-white/10'
-                    }`}
-                  >
-                    <Checkbox 
-                      className="hidden" 
-                      checked={log.activities.prayers.includes(prayer)}
-                      onCheckedChange={() => toggleActivity('prayers', prayer)}
-                    />
-                    <span className="text-xs font-bold">{prayer}</span>
-                    <span className="text-[10px] opacity-60 mt-1">+{EXP_VALUES.SHOLAT_WAJIB} EXP</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          {/* Status Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="rounded-full bg-primary text-primary-foreground font-bold">
+              Semua (0)
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
+              ⏳ Belum Setor
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
+              🕒 Menunggu Nilai
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
+              ✅ Sudah Dinilai
+            </Button>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Sunnah & Lainnya</h4>
-                <div className="space-y-2">
-                  {[...PRAYERS_SUNNAH, ...DAILY_IBADAH].map(item => (
-                    <div key={item} className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-white/5">
-                      <div className="flex items-center gap-3">
-                        <Checkbox 
-                          id={item} 
-                          checked={log.activities.prayers.includes(item) || log.activities.others.includes(item)}
-                          onCheckedChange={() => {
-                            if (PRAYERS_SUNNAH.includes(item)) toggleActivity('prayers', item);
-                            else toggleActivity('others', item);
-                          }}
-                        />
-                        <Label htmlFor={item} className="text-sm font-medium">{item}</Label>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px] bg-white/5 border-none">
-                        +{PRAYERS_SUNNAH.includes(item) ? EXP_VALUES.SHOLAT_SUNNAH : EXP_VALUES.DAILY_ACTIVITY} EXP
-                      </Badge>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <Checkbox 
-                        id="dzikir" 
-                        checked={log.activities.dzikir}
-                        onCheckedChange={() => setLog(p => ({...p, activities: {...p.activities, dzikir: !p.activities.dzikir}}))}
-                      />
-                      <Label htmlFor="dzikir" className="text-sm font-medium">Dzikir Pagi & Petang</Label>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] bg-white/5 border-none">+{EXP_VALUES.DZIKIR} EXP</Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Audio & Fokus</h4>
-                <div className="p-4 rounded-xl bg-accent/5 border border-accent/20 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Volume2 className="w-5 h-5 text-accent" />
-                    <span className="text-sm font-bold">Waktu Murottal</span>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Menit mendengarkan hari ini</Label>
-                      <Input 
-                        type="number" 
-                        className="bg-background/50" 
-                        placeholder="contoh: 30"
-                        value={log.activities.murottalMinutes || ''}
-                        onChange={(e) => setLog(p => ({...p, activities: {...p.activities, murottalMinutes: parseInt(e.target.value) || 0}}))}
-                      />
-                    </div>
-                    <div className="pb-1 text-xs text-muted-foreground">menit</div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground italic">Tips: Mendengarkan Murottal membantu hafalan dan fokusmu.</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card className="glass-card border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                Jurnal Quran
-              </CardTitle>
-              <CardDescription>Pantau Tilawah & Hafalanmu</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">Progres Tilawah</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="number" 
-                    placeholder="Halaman dibaca" 
-                    className="bg-secondary/30"
-                    value={log.activities.quranPages || ''}
-                    onChange={(e) => setLog(p => ({...p, activities: {...p.activities, quranPages: parseInt(e.target.value) || 0}}))}
-                  />
-                  <div className="flex items-center justify-center px-4 bg-primary/10 rounded-md border border-primary/20">
-                    <span className="text-xs font-bold text-primary">+{log.activities.quranPages * EXP_VALUES.QURAN_PAGE} EXP</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Setoran Hafalan</Label>
-                  {log.isVerified && <Badge className="bg-primary/20 text-primary border-primary/20">Terverifikasi</Badge>}
-                  {log.isRevised && <Badge className="bg-destructive/20 text-destructive border-destructive/20">Butuh Revisi</Badge>}
-                </div>
-                <Textarea 
-                  placeholder="Tempel ayat atau ketik hafalan terbarumu..."
-                  className="min-h-[120px] bg-secondary/30 text-sm leading-relaxed"
-                  value={log.activities.hafalanText}
-                  onChange={(e) => setLog(p => ({...p, activities: {...p.activities, hafalanText: e.target.value}}))}
-                />
-                <p className="text-[10px] text-muted-foreground">Ustadzmu akan memverifikasi ini untuk bonus EXP tambahan.</p>
-              </div>
-
-              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6" onClick={handleSave}>
-                <Send className="w-4 h-4 mr-2" />
-                Kirim Laporan Harian
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <History className="w-4 h-4 text-muted-foreground" />
-                Riwayat Terbaru
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-white/5">
-                    <span className="text-muted-foreground">Mei {10-i}, 2024</span>
-                    <span className="font-bold text-primary">+450 EXP</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
+          {/* Empty State / Task List Placeholder */}
+          <Card className="glass-card border-dashed border-2 flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+            <Target className="w-12 h-12 mb-4 opacity-20" />
+            <p>Belum ada tugas hafalan yang diberikan hari ini.</p>
+            <Button variant="link" className="text-primary mt-2">Segarkan Halaman</Button>
           </Card>
         </div>
-      </div>
+      ) : (
+        <Card className="glass-card p-12 text-center animate-in fade-in duration-300">
+          <p className="text-muted-foreground">Halaman {activeTab} sedang dalam pengembangan.</p>
+          <Button variant="outline" className="mt-4" onClick={() => setActiveTab('ringkasan')}>
+            Kembali ke Ringkasan
+          </Button>
+        </Card>
+      )}
 
       <footer className="text-center pt-8">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
