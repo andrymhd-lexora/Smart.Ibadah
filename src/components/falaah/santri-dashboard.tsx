@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react";
@@ -6,7 +5,10 @@ import { UserProfile, IbadahLog } from "@/lib/types";
 import { 
   getRankByExp, 
   getNextRank, 
-  EXP_VALUES 
+  EXP_VALUES,
+  PRAYERS_WAJIB,
+  PRAYERS_SUNNAH,
+  DAILY_IBADAH
 } from "@/lib/constants";
 import { 
   Trophy,
@@ -33,7 +35,9 @@ import {
   LayoutGrid,
   List,
   Copy,
-  Info
+  Info,
+  Volume2,
+  History
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -53,6 +57,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { HADITS_LIST, DOA_LIST, Hadits, Doa } from "@/lib/hadits-doa-data";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface SantriDashboardProps {
   user: UserProfile;
@@ -72,7 +78,7 @@ interface Surah {
 const SURAHS: Surah[] = [
   { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Mekah", totalVerses: 7 },
   { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Madinah", totalVerses: 286 },
-  { number: 3, name: "Ali 'Imran", arabicName: "آل عمران", revelationType: "Madinah", totalVerses: 200 },
+  { number: 3, name: "Ali 'Imran", arabicName: "آl عمران", revelationType: "Madinah", totalVerses: 200 },
   { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Madinah", totalVerses: 176 },
   { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Madinah", totalVerses: 120 },
   { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Mekah", totalVerses: 165 },
@@ -101,6 +107,16 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Integration Stats
+  const [murottalMinutes, setMurottalMinutes] = useState(0);
+  const [lastSurahPlayed, setLastSurahPlayed] = useState<string | null>(null);
+  const [tahfidzSubmissions, setTahfidzSubmissions] = useState<string[]>([]);
+  const murottalTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Mutabaah Checkbox States
+  const [completedPrayers, setCompletedPrayers] = useState<string[]>(['Subuh', 'Dzuhur']);
+  const [completedSunnah, setCompletedSunnah] = useState<string[]>(['Sedekah', 'Dzikir Pagi & Petang']);
   
   // Tahfidz & Doa Recording States
   const [tahfidzViewMode, setTahfidzViewMode] = useState<'grid' | 'list'>('grid');
@@ -138,12 +154,28 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     if (activeTab === 'ringkasan') fetchMotivation();
   }, [user.totalExp, expNeeded, nextRank?.name, user.name, activeTab]);
 
+  // Audio Tracking Logic
+  useEffect(() => {
+    if (playingSurah) {
+      murottalTimerRef.current = setInterval(() => {
+        setMurottalMinutes(prev => prev + 1);
+      }, 60000); // Increment every minute
+    } else {
+      if (murottalTimerRef.current) clearInterval(murottalTimerRef.current);
+    }
+    return () => {
+      if (murottalTimerRef.current) clearInterval(murottalTimerRef.current);
+    };
+  }, [playingSurah]);
+
   const togglePlay = (surahNumber: number) => {
+    const surah = SURAHS.find(s => s.number === surahNumber);
     if (playingSurah === surahNumber) {
       audioRef.current?.pause();
       setPlayingSurah(null);
     } else {
       setPlayingSurah(surahNumber);
+      setLastSurahPlayed(surah?.name || null);
       const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/${selectedQori.id}/${surahNumber}.mp3`;
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
@@ -208,6 +240,9 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   };
 
   const sendRecording = () => {
+    if (selectedItemForSetoran) {
+      setTahfidzSubmissions(prev => [...prev, selectedItemForSetoran.name]);
+    }
     toast({
       title: "Setoran Dikirim!",
       description: `Rekaman ${selectedItemForSetoran?.name} berhasil dikirim ke Ustadz.`,
@@ -222,6 +257,18 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
       title: "Berhasil Disalin",
       description: "Teks telah disalin ke papan klip.",
     });
+  };
+
+  const togglePrayer = (prayer: string) => {
+    setCompletedPrayers(prev => 
+      prev.includes(prayer) ? prev.filter(p => p !== prayer) : [...prev, prayer]
+    );
+  };
+
+  const toggleSunnah = (activity: string) => {
+    setCompletedSunnah(prev => 
+      prev.includes(activity) ? prev.filter(a => a !== activity) : [...prev, activity]
+    );
   };
 
   const navItems = [
@@ -338,6 +385,172 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="glass-card bg-primary/5 border-primary/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary">
+                  <Target className="w-4 h-4" /> Tugas Menunggu
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">12</div>
+                <Button variant="link" className="p-0 text-xs h-auto mt-2 text-primary" onClick={() => setActiveTab('tugas-guru')}>Lihat Daftar Tugas <ArrowRight className="w-3 h-3 ml-1"/></Button>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-accent/5 border-accent/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-accent">
+                  <Clock className="w-4 h-4" /> Kehadiran
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">98%</div>
+                <p className="text-[10px] text-muted-foreground mt-2">Bulan Ini (Januari)</p>
+              </CardContent>
+            </Card>
+            <Card className="glass-card bg-emerald-500/5 border-emerald-500/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-emerald-500">
+                  <BookOpen className="w-4 h-4" /> Capaian Tahfidz
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">Juz 30</div>
+                <Button variant="link" className="p-0 text-xs h-auto mt-2 text-emerald-500" onClick={() => setActiveTab('tahfidz')}>Lihat Progress <ArrowRight className="w-3 h-3 ml-1"/></Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : activeTab === 'mutabaah' ? (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Sholat Wajib */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">Sholat Wajib</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {PRAYERS_WAJIB.map((prayer) => (
+                <button
+                  key={prayer}
+                  onClick={() => togglePrayer(prayer)}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-xl border transition-all h-24",
+                    completedPrayers.includes(prayer)
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                      : "bg-secondary/40 border-white/5 text-muted-foreground hover:bg-secondary/60"
+                  )}
+                >
+                  <span className="font-bold text-sm mb-1">{prayer}</span>
+                  <span className={cn(
+                    "text-[10px] font-bold",
+                    completedPrayers.includes(prayer) ? "text-primary" : "text-muted-foreground opacity-50"
+                  )}>+50 EXP</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Sunnah & Lainnya */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">Sunnah & Lainnya</h3>
+              <Card className="glass-card bg-card/40 border-none">
+                <CardContent className="p-4 space-y-3">
+                  {[...PRAYERS_SUNNAH, ...DAILY_IBADAH, 'Dzikir Pagi & Petang'].map((item) => (
+                    <div 
+                      key={item} 
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer",
+                        completedSunnah.includes(item) ? "bg-primary/5 border-primary/20" : "bg-transparent border-white/5"
+                      )}
+                      onClick={() => toggleSunnah(item)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border flex items-center justify-center transition-all",
+                          completedSunnah.includes(item) ? "bg-primary border-primary" : "border-white/20"
+                        )}>
+                          {completedSunnah.includes(item) && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                        <span className={cn("text-sm font-medium", completedSunnah.includes(item) ? "text-foreground" : "text-muted-foreground")}>{item}</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] opacity-70">
+                        +{item === 'Dzikir Pagi & Petang' ? 20 : item === 'Sedekah' || item === 'Puasa' ? 40 : 30} EXP
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Audio & Fokus + Ringkasan Tilawah */}
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">Audio & Fokus</h3>
+              <Card className="glass-card border-accent/20 bg-accent/5">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-accent/20 p-3 rounded-xl">
+                      <Volume2 className="w-6 h-6 text-accent" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold">Waktu Murottal</h4>
+                      <p className="text-xs text-muted-foreground">Menit mendengarkan hari ini</p>
+                    </div>
+                  </div>
+
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 right-4 flex items-center text-xs text-muted-foreground font-bold pointer-events-none">menit</div>
+                    <div className="w-full bg-secondary/50 rounded-xl p-4 border border-white/10 text-3xl font-mono font-bold">
+                      {murottalMinutes > 0 ? murottalMinutes : "0"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+                    <History className="w-3 h-3" />
+                    {lastSurahPlayed ? `Sedang/Terakhir mendengar: Surat ${lastSurahPlayed}` : "Belum ada murottal yang diputar hari ini"}
+                  </div>
+                  
+                  <p className="text-[10px] text-muted-foreground/60 leading-relaxed pt-2">
+                    *Tips: Mendengarkan Murottal membantu hafalan dan fokusmu.*
+                  </p>
+                </CardContent>
+              </Card>
+
+              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">Ringkasan Tilawah</h3>
+              <Card className="glass-card border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-primary" /> Progress Setoran
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {tahfidzSubmissions.length > 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Setoran Hari Ini:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {tahfidzSubmissions.map((s, i) => (
+                          <Badge key={i} className="bg-primary text-primary-foreground font-bold px-3 py-1">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2 mt-4 text-[10px] text-primary font-bold uppercase tracking-wider">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Tugas Terkirim
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto opacity-50">
+                        <AlertCircle className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground italic">Belum ada setoran hari ini</p>
+                      <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold tracking-widest" onClick={() => setActiveTab('tahfidz')}>Ke Tab Tahfidz</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       ) : activeTab === 'hadits' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
