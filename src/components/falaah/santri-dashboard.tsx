@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -82,7 +81,6 @@ const QORIS = [
   { id: 'ar.rifai', name: 'Hani Ar-Rifa\'i' },
 ];
 
-// Simulasi data kehadiran (hijau = ada setoran, merah = tidak ada)
 const MOCK_ATTENDANCE = [
   { date: new Date(2025, 2, 1), hasReport: true },
   { date: new Date(2025, 2, 2), hasReport: true },
@@ -96,27 +94,22 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
   
-  // Talaqqi & Tahfidz States
   const [selectedQori, setSelectedQori] = useState(QORIS[0]);
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Integration Stats
   const [murottalMinutes, setMurottalMinutes] = useState(0);
   const [lastSurahPlayed, setLastSurahPlayed] = useState<string | null>(null);
   const [tahfidzSubmissions, setTahfidzSubmissions] = useState<string[]>([]);
   const murottalTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mutabaah States
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [completedPrayers, setCompletedPrayers] = useState<string[]>(['Subuh', 'Dzuhur']);
   const [completedSunnah, setCompletedSunnah] = useState<string[]>(['Sedekah', 'Dzikir Pagi & Petang']);
   
-  // Modal State
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
 
-  // Recording States
   const [tahfidzViewMode, setTahfidzViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<{name: string, type: 'surah' | 'doa'} | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -526,8 +519,8 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
           <div className="py-4">
             <div className="grid grid-cols-7 gap-2">
-              {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map(day => (
-                <div key={day} className="text-center text-[10px] font-bold text-muted-foreground">{day}</div>
+              {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((day, idx) => (
+                <div key={`${day}-${idx}`} className="text-center text-[10px] font-bold text-muted-foreground">{day}</div>
               ))}
               {attendanceDays.map((day, idx) => {
                 const report = MOCK_ATTENDANCE.find(a => isSameDay(a.date, day));
