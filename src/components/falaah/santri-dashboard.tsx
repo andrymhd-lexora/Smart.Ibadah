@@ -24,15 +24,14 @@ import {
   Star,
   Play,
   Pause,
-  Volume2,
   Search,
-  AlertCircle,
   Mic,
   Square,
   Trash2,
   Send,
   LayoutGrid,
-  List
+  List,
+  Copy
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -51,6 +50,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { HADITS_LIST, DOA_LIST, Hadits, Doa } from "@/lib/hadits-doa-data";
 
 interface SantriDashboardProps {
   user: UserProfile;
@@ -97,7 +97,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   // Talaqqi & Tahfidz States
   const [selectedQori, setSelectedQori] = useState(QORIS[0]);
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
-  const [searchSurah, setSearchSurah] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Tahfidz Specific States
@@ -158,7 +158,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     }
   };
 
-  // Recording Logic
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -215,6 +214,14 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     deleteRecording();
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Berhasil Disalin",
+      description: "Teks telah disalin ke papan klip.",
+    });
+  };
+
   const navItems = [
     { id: 'ringkasan', label: 'Ringkasan', icon: LayoutDashboard },
     { id: 'tugas-guru', label: 'Tugas Guru', icon: Target },
@@ -227,8 +234,18 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   ];
 
   const filteredSurahs = SURAHS.filter(s => 
-    s.name.toLowerCase().includes(searchSurah.toLowerCase()) || 
-    s.number.toString() === searchSurah
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.number.toString() === searchQuery
+  );
+
+  const filteredHadits = HADITS_LIST.filter(h => 
+    h.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    h.translation.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredDoa = DOA_LIST.filter(d => 
+    d.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    d.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTime = (seconds: number) => {
@@ -244,11 +261,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         onEnded={() => setPlayingSurah(null)} 
         onError={() => {
           setPlayingSurah(null);
-          toast({
-            variant: "destructive",
-            title: "Kesalahan Audio",
-            description: "Sumber audio tidak ditemukan. Silakan coba Qori lain.",
-          });
         }}
       />
 
@@ -259,7 +271,10 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as SantriTab)}
+                onClick={() => {
+                  setActiveTab(item.id as SantriTab);
+                  setSearchQuery("");
+                }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
                   activeTab === item.id 
@@ -276,6 +291,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         </ScrollArea>
       </Card>
 
+      {/* Tab Contents */}
       {activeTab === 'ringkasan' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="glass-card overflow-hidden border-none relative">
@@ -307,7 +323,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </CardHeader>
             <CardContent>
               <Progress value={expProgress} className="h-3 bg-secondary" />
-              
               <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 items-start cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setActiveTab('tugas-guru')}>
                 <div className="bg-primary/20 p-2 rounded-lg">
                   <BrainCircuit className="w-5 h-5 text-primary" />
@@ -321,40 +336,111 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+      ) : activeTab === 'hadits' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <ScrollText className="w-6 h-6 text-primary" />
+              30 Hadits Pilihan 📜
+            </h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Cari judul atau isi hadits..." 
+                className="pl-9 glass-card h-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-primary/20">
-              <Target className="w-8 h-8 text-primary" />
-              <div>
-                <div className="text-2xl font-bold">12</div>
-                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Tugas Menunggu</div>
-              </div>
-              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('tugas-guru')}>
-                Lihat Semua <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredHadits.map((hadits) => (
+              <Card key={hadits.id} className="glass-card border-none bg-card/40 flex flex-col overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      Hadits {hadits.id}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground font-bold">{hadits.source}</span>
+                  </div>
+                  <CardTitle className="text-lg mt-2">{hadits.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col space-y-4">
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 relative group">
+                    <p className="text-2xl text-right font-headline leading-relaxed text-primary">
+                      {hadits.arabic}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => copyToClipboard(hadits.arabic)}
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground italic leading-relaxed">
+                    "{hadits.translation}"
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : activeTab === 'doa' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <HandHeart className="w-6 h-6 text-accent" />
+              30 Doa & Dzikir Harian 🙏
+            </h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Cari doa harian atau dzikir sholat..." 
+                className="pl-9 glass-card h-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
-            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-accent/20">
-              <Clock className="w-8 h-8 text-accent" />
-              <div>
-                <div className="text-2xl font-bold">85%</div>
-                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Kehadiran Talaqqi</div>
-              </div>
-              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('talaqqi')}>
-                Detail Absensi <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            </Card>
-
-            <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-destructive/20">
-              <BookOpen className="w-8 h-8 text-destructive" />
-              <div>
-                <div className="text-2xl font-bold">Juz 30</div>
-                <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Capaian Tahfidz</div>
-              </div>
-              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setActiveTab('tahfidz')}>
-                Jurnal Hafalan <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            </Card>
+          <div className="space-y-4">
+            {filteredDoa.map((doa) => (
+              <Card key={doa.id} className="glass-card border-none bg-card/40">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold">
+                        {doa.id}
+                      </div>
+                      {doa.title}
+                    </CardTitle>
+                    <Badge className={cn(
+                      "text-[10px] font-bold uppercase",
+                      doa.category === 'Sholat' ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"
+                    )}>
+                      {doa.category}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-3xl text-right font-headline leading-loose text-foreground">
+                    {doa.arabic}
+                  </p>
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <p className="text-xs font-bold text-accent italic tracking-wide">
+                      {doa.latin}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {doa.translation}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       ) : activeTab === 'tahfidz' ? (
@@ -388,8 +474,8 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             <Input 
               placeholder="Cari surat untuk setoran..." 
               className="pl-9 glass-card h-12"
-              value={searchSurah}
-              onChange={(e) => setSearchSurah(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -498,8 +584,8 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               <Input 
                 placeholder="Cari surat..." 
                 className="pl-9 glass-card h-10"
-                value={searchSurah}
-                onChange={(e) => setSearchSurah(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
