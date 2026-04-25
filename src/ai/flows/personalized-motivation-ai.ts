@@ -65,7 +65,19 @@ const personalizedMotivationFlow = ai.defineFlow(
     outputSchema: PersonalizedMotivationOutputSchema,
   },
   async input => {
-    const {output} = await personalizedMotivationPrompt(input);
-    return output!;
+    try {
+      const {output} = await personalizedMotivationPrompt(input);
+      if (!output) {
+        throw new Error('Output AI kosong');
+      }
+      return output;
+    } catch (error) {
+      // Log error secara internal tapi berikan fallback ke pengguna agar UI tidak crash
+      console.error('Genkit error or service unavailable:', error);
+      
+      return {
+        message: `Assalamu'alaikum ${input.name}, tetap istiqomah ya! Kamu tinggal sedikit lagi mencapai peringkat ${input.nextRankName}. Mari selesaikan ${input.suggestedActivity} hari ini untuk terus bertumbuh.`
+      };
+    }
   }
 );
