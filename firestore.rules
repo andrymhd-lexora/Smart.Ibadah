@@ -1,0 +1,129 @@
+rules_version = '2';
+
+/**
+ * Falaah Application Security Rules
+ *
+ * Core Philosophy:
+ * This ruleset implements a robust, role-based access control (RBAC) model optimized for performance
+ * using a "Denormalization for Authorization" strategy. While the data is hierarchical, authorization
+ * context is duplicated onto child documents to ensure flat, fast security checks without costly
+ * cross-document lookups (get() calls).
+ *
+ * Data Structure:
+ * - /users/{userId}: Primary user profiles (Santri, Ustadz, Wali).
+ * - /users/{santriId}/ibadahLogs/{logId}: Daily activity logs for students.
+ * - /users/{santriId}/ibadahLogs/{logId}/hafalanSubmissions/{subId}: Specific memorization submissions.
+ *
+ * Key Security Decisions:
+ * 1. Ownership Model: Users have full access to their own data tree.
+ * 2. Shared Access (Closed Collaborators): Ustadz (Teachers) and Wali (Parents) gain read access to 
+ *    Santri data based on denormalized ID fields (`assignedUstadzId` and `linkedWaliIds`) found 
+ *    directly on the activity and submission documents.
+ * 3. Prototyping Flexibility: Rules enforce "Who" can access data and "Relational Integrity" 
+ *    (ensuring documents stay linked to the right owner), but do not strictly validate data types 
+ *    or optional fields to allow for rapid frontend iteration.
+ * 4. Verification Flow: Ustadz are specifically granted update permissions on HafalanSubmissions 
+ *    to change statuses and add notes, even if they don't own the document.
+ * 5. State Integrity: All destructive operations (update, delete) require an explicit existence check.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+
+    /** @description Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the user's UID matches the provided ID. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Checks if the current user is the assigned Ustadz for the resource. */
+    function isAssignedUstadz(resourceData) {
+      return isSignedIn() && resourceData.assignedUstadzId == request.auth.uid;
+    }
+
+    /** @description Checks if the current user is a linked Wali for the resource. */
+    function isLinkedWali(resourceData) {
+      return isSignedIn() && request.auth.uid in resourceData.linkedWaliIds;
+    }
+
+    /** @description Combines ownership and existence checks for updates and deletes. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for User profiles. Users can manage their own profiles.
+     * @path /users/{userId}
+     * @allow (get) Any signed-in user can view a profile (for discovery/linking).
+     * @deny (update) Changing the 'role' or 'id' after creation.
+     * @principle Ownership and Identity verification.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) 
+                    && request.resource.data.id == resource.data.id 
+                    && request.resource.data.role == resource.data.role;
+      allow delete: if false; // Profiles should generally not be deleted by clients.
+    }
+
+    /**
+     * @description Rules for Ibadah Logs. Santri owns them; Ustadz and Wali can view them via denormalized IDs.
+     * @path /users/{santriId}/ibadahLogs/{ibadahLogId}
+     * @allow (list) An Ustadz assigned to the student can list their logs.
+     * @deny (create) Creating a log for a different student's path.
+     * @principle Shared access via denormalized authorization context.
+     */
+    match /users/{santriId}/ibadahLogs/{ibadahLogId} {
+      allow get: if isOwner(santriId) || isAssignedUstadz(resource.data) || isLinkedWali(resource.data);
+      allow list: if isOwner(santriId) || isAssignedUstadz(resource.data) || isLinkedWali(resource.data);
+      allow create: if isOwner(santriId) && request.resource.data.santriId == santriId;
+      allow update: if isExistingOwner(santriId) && request.resource.data.santriId == resource.data.santriId;
+      allow delete: if isExistingOwner(santriId);
+    }
+
+    /**
+     * @description Rules for Hafalan (Memorization) Submissions. 
+     * Addresses the issue where Ustadz cannot see or check recordings.
+     * @path /users/{santriId}/ibadahLogs/{ibadahLogId}/hafalanSubmissions/{submissionId}
+     * @allow (get) The assigned Ustadz viewing the recording URL.
+     * @allow (update) The assigned Ustadz updating the 'status' or 'ustadzNotes'.
+     * @deny (update) A Santri trying to change the 'expAwarded' after submission.
+     * @principle Relational integrity and delegated update permissions.
+     */
+    match /users/{santriId}/ibadahLogs/{ibadahLogId}/hafalanSubmissions/{submissionId} {
+      // Get and List allow the Ustadz to see the submissions and their recording URLs
+      allow get: if isOwner(santriId) || isAssignedUstadz(resource.data) || isLinkedWali(resource.data);
+      allow list: if isOwner(santriId) || isAssignedUstadz(resource.data) || isLinkedWali(resource.data);
+      
+      allow create: if isOwner(santriId) 
+                    && request.resource.data.santriId == santriId 
+                    && request.resource.data.ibadahLogId == ibadahLogId;
+      
+      allow update: if (isExistingOwner(santriId) || isAssignedUstadz(resource.data))
+                    && request.resource.data.santriId == resource.data.santriId
+                    && (isOwner(santriId) ? (request.resource.data.expAwarded == resource.data.expAwarded) : true);
+      
+      allow delete: if isExistingOwner(santriId);
+    }
+    
+    // Support for Collection Group queries for Ustadz and Wali listing
+    match /{path=**}/ibadahLogs/{logId} {
+      allow list: if isSignedIn() && (isAssignedUstadz(resource.data) || isLinkedWali(resource.data));
+    }
+    
+    match /{path=**}/hafalanSubmissions/{subId} {
+      allow list: if isSignedIn() && (isAssignedUstadz(resource.data) || isLinkedWali(resource.data));
+    }
+
+  }
+}
