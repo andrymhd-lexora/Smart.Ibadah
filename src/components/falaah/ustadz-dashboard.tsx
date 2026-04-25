@@ -14,7 +14,8 @@ import {
   CheckCircle,
   Clock,
   Mic,
-  MessageSquare
+  MessageSquare,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,8 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -185,57 +187,58 @@ export function UstadzDashboard() {
                             <ExternalLink className="w-3 h-3 ml-2" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="glass-card border-white/10 sm:max-w-[500px] p-8">
-                          <DialogHeader>
-                            <DialogTitle className="text-2xl font-headline font-bold">Tinjau Hafalan</DialogTitle>
-                            <DialogDescription className="text-sm">
-                              Santri: <span className="text-foreground font-bold text-lg ml-1">{selectedStudent?.name}</span>
-                            </DialogDescription>
+                        <DialogContent className="glass-card border-white/10 sm:max-w-[600px] p-8 bg-[#12141c]">
+                          <DialogHeader className="space-y-4">
+                            <DialogTitle className="text-4xl font-headline font-bold text-white">Tinjau Hafalan</DialogTitle>
+                            <div className="flex items-center gap-2 text-xl">
+                              <span className="text-muted-foreground">Santri:</span>
+                              <span className="text-white font-bold">{selectedStudent?.name}</span>
+                            </div>
                           </DialogHeader>
                           
-                          <div className="space-y-6 py-6">
-                            <div className="space-y-3">
-                              <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Kiriman (Surah & Ayat)</h4>
-                              <div className="p-6 rounded-2xl bg-secondary/40 border border-white/5 italic text-base leading-relaxed text-foreground/90 shadow-inner">
+                          <div className="space-y-8 py-8">
+                            <div className="space-y-4">
+                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Kiriman (Surah & Ayat)</h4>
+                              <div className="p-8 rounded-[2rem] bg-[#1e212b] border border-white/5 italic text-xl leading-relaxed text-white shadow-inner relative group">
                                 "Inna a'tainakal kauthar. Fasalli lirabbika wanhar. Inna syani'aka huwal abtar."
                                 <br />
-                                <span className="text-primary font-bold not-italic mt-2 block text-sm">- Surah Al-Kauthar (1-3)</span>
+                                <span className="text-[#10B981] font-bold not-italic mt-4 block text-lg">- Surah Al-Kauthar (1-3)</span>
                               </div>
                             </div>
                             
-                            <div className="space-y-3">
-                              <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Umpan Balik (Opsional)</h4>
+                            <div className="space-y-4">
+                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Umpan Balik (Opsional)</h4>
                               <Textarea 
                                 placeholder="Tulis catatan revisi atau penyemangat di sini..."
                                 value={verificationNote}
                                 onChange={(e) => setVerificationNote(e.target.value)}
-                                className="bg-secondary/20 border-white/10 min-h-[100px] rounded-xl focus:ring-primary"
+                                className="bg-[#1e212b] border-emerald-500/30 min-h-[140px] rounded-2xl focus:ring-emerald-500 text-lg p-6 placeholder:text-muted-foreground/50"
                               />
                             </div>
                           </div>
 
-                          <DialogFooter className="flex flex-col sm:flex-row gap-3">
+                          <DialogFooter className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mt-4">
                             <Button 
-                              variant="destructive" 
-                              className="flex-1 bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 h-12 rounded-xl font-bold"
+                              variant="outline" 
+                              className="flex-1 bg-[#2a1b1b] text-[#ef4444] hover:bg-[#3a1b1b] border-[#ef4444]/20 h-16 rounded-2xl font-bold text-lg px-8"
                               onClick={handleRevision}
                             >
-                              <AlertCircle className="w-4 h-4 mr-2" />
+                              <AlertCircle className="w-5 h-5 mr-3" />
                               Butuh Revisi
                             </Button>
                             <Button 
                               variant="outline"
-                              className="flex-1 glass-card border-white/10 h-12 rounded-xl font-bold"
+                              className="flex-1 bg-[#1e212b] text-white hover:bg-[#2e313b] border-white/10 h-16 rounded-2xl font-bold text-lg px-8"
                               onClick={() => handleVerify(false)}
                             >
-                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              <CheckCircle2 className="w-5 h-5 mr-3" />
                               Verifikasi Saja
                             </Button>
                             <Button 
-                              className="flex-1 bg-primary text-primary-foreground font-bold h-12 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform"
+                              className="flex-1 bg-[#10B981] text-white hover:bg-[#0da673] font-bold h-16 rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.3)] hover:scale-[1.02] transition-transform text-lg px-8"
                               onClick={() => handleVerify(true)}
                             >
-                              <Star className="w-4 h-4 mr-2 fill-current" />
+                              <Star className="w-5 h-5 mr-3 fill-current" />
                               Mumtaz (+200)
                             </Button>
                           </DialogFooter>
