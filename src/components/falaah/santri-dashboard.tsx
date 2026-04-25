@@ -57,7 +57,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { HADITS_LIST, DOA_LIST, Hadits, Doa } from "@/lib/hadits-doa-data";
+import { HADITS_LIST, DOA_LIST } from "@/lib/hadits-doa-data";
+import { ALL_SURAHS, Surah } from "@/lib/quran-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -67,28 +68,6 @@ interface SantriDashboardProps {
 }
 
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
-
-interface Surah {
-  number: number;
-  name: string;
-  arabicName: string;
-  revelationType: string;
-  totalVerses: number;
-}
-
-const SURAHS: Surah[] = [
-  { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Mekah", totalVerses: 7 },
-  { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Madinah", totalVerses: 286 },
-  { number: 3, name: "Ali 'Imran", arabicName: "آl عمران", revelationType: "Madinah", totalVerses: 200 },
-  { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Madinah", totalVerses: 176 },
-  { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Madinah", totalVerses: 120 },
-  { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Mekah", totalVerses: 165 },
-  { number: 78, name: "An-Naba'", arabicName: "النبأ", revelationType: "Mekah", totalVerses: 40 },
-  { number: 108, name: "Al-Kauthar", arabicName: "الكوثر", revelationType: "Mekah", totalVerses: 3 },
-  { number: 112, name: "Al-Ikhlas", arabicName: "الإخلاص", revelationType: "Mekah", totalVerses: 4 },
-  { number: 113, name: "Al-Falaq", arabicName: "الفلق", revelationType: "Mekah", totalVerses: 5 },
-  { number: 114, name: "An-Nas", arabicName: "الناس", revelationType: "Mekah", totalVerses: 6 },
-];
 
 const QORIS = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -170,7 +149,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   }, [playingSurah]);
 
   const togglePlay = (surahNumber: number) => {
-    const surah = SURAHS.find(s => s.number === surahNumber);
+    const surah = ALL_SURAHS.find(s => s.number === surahNumber);
     if (playingSurah === surahNumber) {
       audioRef.current?.pause();
       setPlayingSurah(null);
@@ -283,7 +262,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     { id: 'rank', label: 'Rank', icon: Trophy },
   ];
 
-  const filteredSurahs = SURAHS.filter(s => 
+  const filteredSurahs = ALL_SURAHS.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     s.number.toString() === searchQuery
   );
