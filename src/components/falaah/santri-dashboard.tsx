@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UserProfile, IbadahLog } from "@/lib/types";
 import { 
   getRankByExp, 
@@ -22,13 +22,18 @@ import {
   ArrowRight,
   ChevronRight,
   Flame,
-  Star
+  Star,
+  Play,
+  Pause,
+  Volume2,
+  Search
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { getPersonalizedMotivation } from "@/ai/flows/personalized-motivation-ai";
 import { cn } from "@/lib/utils";
 
@@ -39,10 +44,46 @@ interface SantriDashboardProps {
 
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
 
+interface Surah {
+  number: number;
+  name: string;
+  arabicName: string;
+  revelationType: string;
+  totalVerses: number;
+}
+
+const SURAHS: Surah[] = [
+  { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Pembukaan", totalVerses: 7 },
+  { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Sapi", totalVerses: 286 },
+  { number: 3, name: "Ali 'Imran", arabicName: "آل عمران", revelationType: "Keluarga Imran", totalVerses: 200 },
+  { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Wanita", totalVerses: 176 },
+  { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Hidangan", totalVerses: 120 },
+  { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Binatang Ternak", totalVerses: 165 },
+  { number: 30, name: "An-Naba'", arabicName: "النبأ", revelationType: "Berita Besar", totalVerses: 40 },
+  { number: 108, name: "Al-Kauthar", arabicName: "الكوثر", revelationType: "Nikmat Berlimpah", totalVerses: 3 },
+  { number: 112, name: "Al-Ikhlas", arabicName: "الإخلاص", revelationType: "Ikhlas", totalVerses: 4 },
+  { number: 113, name: "Al-Falaq", arabicName: "الفلق", revelationType: "Waktu Subuh", totalVerses: 5 },
+  { number: 114, name: "An-Nas", arabicName: "الناس", revelationType: "Manusia", totalVerses: 6 },
+];
+
+const QORIS = [
+  { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
+  { id: 'ar.shatree', name: 'Abu Bakr Ash-Shaatree' },
+  { id: 'ar.juhany', name: 'Abdullah Al-Juhany' },
+  { id: 'ar.husary', name: 'Mahmoud Al-Husary' },
+  { id: 'ar.rifai', name: 'Hani Ar-Rifa\'i' },
+];
+
 export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [activeTab, setActiveTab] = useState<SantriTab>('ringkasan');
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
+  
+  // Talaqqi States
+  const [selectedQori, setSelectedQori] = useState(QORIS[0]);
+  const [playingSurah, setPlayingSurah] = useState<number | null>(null);
+  const [searchSurah, setSearchSurah] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentRank = getRankByExp(user.totalExp);
   const nextRank = getNextRank(user.totalExp);
@@ -70,6 +111,21 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     if (activeTab === 'ringkasan') fetchMotivation();
   }, [user.totalExp, expNeeded, nextRank?.name, user.name, activeTab]);
 
+  const togglePlay = (surahNumber: number) => {
+    if (playingSurah === surahNumber) {
+      audioRef.current?.pause();
+      setPlayingSurah(null);
+    } else {
+      setPlayingSurah(surahNumber);
+      // Constructing a reliable source for audio (using Al Quran Cloud public MP3 API logic)
+      const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/${selectedQori.id}/${surahNumber}.mp3`;
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+      }
+    }
+  };
+
   const navItems = [
     { id: 'ringkasan', label: 'Ringkasan', icon: LayoutDashboard },
     { id: 'tugas-guru', label: 'Tugas Guru', icon: Target },
@@ -81,8 +137,16 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     { id: 'rank', label: 'Rank', icon: Trophy },
   ];
 
+  const filteredSurahs = SURAHS.filter(s => 
+    s.name.toLowerCase().includes(searchSurah.toLowerCase()) || 
+    s.number.toString() === searchSurah
+  );
+
   return (
     <div className="space-y-6 pb-12">
+      {/* Hidden Audio Element */}
+      <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
+
       {/* Sub-Navigation Bar */}
       <Card className="glass-card border-none bg-card/40 overflow-hidden">
         <ScrollArea className="w-full whitespace-nowrap">
@@ -109,7 +173,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
       {activeTab === 'ringkasan' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Header Summary Card */}
           <Card className="glass-card overflow-hidden border-none relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-destructive"></div>
             <CardHeader className="pb-2">
@@ -154,7 +217,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Key Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-2 border-primary/20">
               <Target className="w-8 h-8 text-primary" />
@@ -192,7 +254,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         </div>
       ) : activeTab === 'tugas-guru' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Tasks Page Content - Following Image Request */}
           <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex items-start gap-4">
             <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-lg">
               <Target className="w-6 h-6" />
@@ -207,7 +268,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </div>
           </div>
 
-          {/* Status Filters */}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" className="rounded-full bg-primary text-primary-foreground font-bold">
               Semua (0)
@@ -223,12 +283,123 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </Button>
           </div>
 
-          {/* Empty State / Task List Placeholder */}
           <Card className="glass-card border-dashed border-2 flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
             <Target className="w-12 h-12 mb-4 opacity-20" />
             <p>Belum ada tugas hafalan yang diberikan hari ini.</p>
             <Button variant="link" className="text-primary mt-2">Segarkan Halaman</Button>
           </Card>
+        </div>
+      ) : activeTab === 'talaqqi' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Talaqqi Header */}
+          <div className="bg-[#E9F7F3] dark:bg-primary/10 border border-primary/20 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Headphones className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold text-primary-foreground flex items-center gap-2">
+                🎧 Mode Talaqqi — Mendengar Qori
+              </h2>
+            </div>
+            <p className="text-sm text-primary/80 mb-6">
+              Pilih qori kemudian klik surat untuk mendengarkan. Ulangi hingga hafal, lalu setor ke Ustadz Anda.
+            </p>
+            
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2">
+                {QORIS.map((qori) => (
+                  <Button
+                    key={qori.id}
+                    size="sm"
+                    variant={selectedQori.id === qori.id ? "default" : "outline"}
+                    className={cn(
+                      "rounded-full transition-all text-xs font-medium h-9",
+                      selectedQori.id === qori.id ? "bg-primary text-primary-foreground" : "bg-card/50 border-primary/20 text-primary"
+                    )}
+                    onClick={() => {
+                      setSelectedQori(qori);
+                      setPlayingSurah(null);
+                      audioRef.current?.pause();
+                    }}
+                  >
+                    {qori.name}
+                  </Button>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+
+          {/* Surah List Header & Search */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4">
+            <h3 className="text-2xl font-bold flex items-center gap-2">
+              Daftar Surat Al-Quran 📖
+            </h3>
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Cari surat..." 
+                className="pl-9 glass-card h-10"
+                value={searchSurah}
+                onChange={(e) => setSearchSurah(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Surah Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredSurahs.map((surah) => (
+              <Card key={surah.number} className="glass-card hover:border-primary/50 transition-all group overflow-hidden border-none bg-card/40">
+                <CardContent className="p-5">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                        {surah.number}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-lg leading-tight">{surah.name}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {surah.revelationType} • {surah.totalVerses} ayat
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-2xl font-headline font-bold text-primary/80">
+                      {surah.arabicName}
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className={cn(
+                      "w-full font-bold h-11 transition-all",
+                      playingSurah === surah.number 
+                        ? "bg-accent text-accent-foreground hover:bg-accent/90" 
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                    onClick={() => togglePlay(surah.number)}
+                  >
+                    {playingSurah === surah.number ? (
+                      <>
+                        <Pause className="w-4 h-4 mr-2" />
+                        Sedang Diputar
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Putar Murottal
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+                {playingSurah === surah.number && (
+                  <div className="absolute bottom-0 left-0 h-1 bg-accent w-full animate-pulse"></div>
+                )}
+              </Card>
+            ))}
+          </div>
+
+          {filteredSurahs.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>Surat "{searchSurah}" tidak ditemukan.</p>
+            </div>
+          )}
         </div>
       ) : (
         <Card className="glass-card p-12 text-center animate-in fade-in duration-300">
