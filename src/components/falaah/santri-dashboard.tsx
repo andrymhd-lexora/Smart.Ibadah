@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react";
@@ -26,7 +25,8 @@ import {
   Play,
   Pause,
   Volume2,
-  Search
+  Search,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -36,6 +36,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { getPersonalizedMotivation } from "@/ai/flows/personalized-motivation-ai";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface SantriDashboardProps {
   user: UserProfile;
@@ -55,7 +56,7 @@ interface Surah {
 const SURAHS: Surah[] = [
   { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Pembukaan", totalVerses: 7 },
   { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Sapi", totalVerses: 286 },
-  { number: 3, name: "Ali 'Imran", arabicName: "آل عمران", revelationType: "Keluarga Imran", totalVerses: 200 },
+  { number: 3, name: "Ali 'Imran", arabicName: "آl عمران", revelationType: "Keluarga Imran", totalVerses: 200 },
   { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Wanita", totalVerses: 176 },
   { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Hidangan", totalVerses: 120 },
   { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Binatang Ternak", totalVerses: 165 },
@@ -68,7 +69,7 @@ const SURAHS: Surah[] = [
 
 const QORIS = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
-  { id: 'ar.shatree', name: 'Abu Bakr Ash-Shaatree' },
+  { id: 'ar.shaatree', name: 'Abu Bakr Al-Shatri' },
   { id: 'ar.juhany', name: 'Abdullah Al-Juhany' },
   { id: 'ar.husary', name: 'Mahmoud Al-Husary' },
   { id: 'ar.rifai', name: 'Hani Ar-Rifa\'i' },
@@ -117,11 +118,19 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
       setPlayingSurah(null);
     } else {
       setPlayingSurah(surahNumber);
-      // Constructing a reliable source for audio (using Al Quran Cloud public MP3 API logic)
+      // Constructing a reliable source for audio
       const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/${selectedQori.id}/${surahNumber}.mp3`;
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
-        audioRef.current.play();
+        audioRef.current.play().catch((err) => {
+          console.error("Gagal memutar audio:", err);
+          setPlayingSurah(null);
+          toast({
+            variant: "destructive",
+            title: "Gagal Memutar Audio",
+            description: "Maaf, murottal untuk Qori/Surat ini tidak tersedia saat ini.",
+          });
+        });
       }
     }
   };
@@ -144,8 +153,19 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Hidden Audio Element */}
-      <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
+      {/* Hidden Audio Element with robust error handling */}
+      <audio 
+        ref={audioRef} 
+        onEnded={() => setPlayingSurah(null)} 
+        onError={() => {
+          setPlayingSurah(null);
+          toast({
+            variant: "destructive",
+            title: "Kesalahan Audio",
+            description: "Sumber audio tidak ditemukan. Silakan coba Qori lain.",
+          });
+        }}
+      />
 
       {/* Sub-Navigation Bar */}
       <Card className="glass-card border-none bg-card/40 overflow-hidden">
