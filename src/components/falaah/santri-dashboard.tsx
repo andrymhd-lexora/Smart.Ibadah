@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -101,10 +100,7 @@ const MOCK_ATTENDANCE = [
   { date: new Date(2025, 2, 5), hasReport: false },
 ];
 
-const MOCK_TASKS: TeacherTask[] = [
-  // Contoh data tugas jika ingin menampilkan sesuatu
-  // { id: '1', title: 'Hafalan Al-Baqarah 1-10', description: 'Setorkan hafalan lancar tanpa melihat.', status: 'Belum Setor' }
-];
+const MOCK_TASKS: TeacherTask[] = [];
 
 export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [activeTab, setActiveTab] = useState<SantriTab>('ringkasan');
@@ -367,7 +363,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         </div>
       ) : activeTab === 'tugas-guru' ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Header Section Sesuai Foto */}
           <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-3xl p-8 border border-emerald-100 dark:border-emerald-900/30">
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-white dark:bg-card p-2 rounded-xl shadow-sm border border-emerald-100 dark:border-white/5">
@@ -380,7 +375,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </p>
           </div>
 
-          {/* Filter Status Sesuai Foto */}
           <div className="flex flex-wrap gap-3">
             <Button
               variant={taskFilter === 'Semua' ? 'default' : 'outline'}
@@ -415,7 +409,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </Button>
           </div>
 
-          {/* List Section Sesuai Foto (Empty State) */}
           <div className="bg-secondary/20 rounded-[2.5rem] p-24 flex flex-col items-center justify-center text-center space-y-4 border border-dashed border-white/10">
             <div className="relative">
               <PartyPopper className="w-16 h-16 text-primary/60" />
@@ -675,7 +668,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         <Card className="glass-card p-12 text-center"><p className="text-muted-foreground">Halaman {activeTab} sedang dikembangkan.</p></Card>
       )}
 
-      {/* Attendance Progress Modal */}
       <Dialog open={isAttendanceModalOpen} onOpenChange={setIsAttendanceModalOpen}>
         <DialogContent className="glass-card sm:max-w-md border-white/10">
           <DialogHeader>
@@ -740,7 +732,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Recording Dialog */}
       <Dialog open={!!selectedItemForSetoran} onOpenChange={() => !isRecording && setSelectedItemForSetoran(null)}>
         <DialogContent className="glass-card sm:max-w-md border-white/10">
           <DialogHeader>

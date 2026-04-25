@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { UserProfile, UserRole } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
+import { Footer } from "@/components/falaah/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +56,6 @@ function ProfileContent() {
 
   const handleSave = () => {
     setIsSaving(true);
-    // Simulasi penyimpanan data
     setTimeout(() => {
       setIsSaving(false);
       toast({
@@ -85,7 +85,7 @@ function ProfileContent() {
           </Button>
         </div>
 
-        <Card className="glass-card border-white/10 shadow-2xl">
+        <Card className="glass-card border-white/10 shadow-2xl mb-12">
           <CardHeader className="text-center pb-2">
             <div className="relative mx-auto w-32 h-32 mb-4">
               <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-xl">
@@ -169,13 +169,8 @@ function ProfileContent() {
             </div>
           </CardContent>
         </Card>
-
-        <footer className="text-center pt-8">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
-            Rumah Tahfidz Ikhsan — Falaah v.1.0
-          </p>
-        </footer>
       </main>
+      <Footer />
     </div>
   );
 }

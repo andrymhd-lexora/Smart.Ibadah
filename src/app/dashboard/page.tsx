@@ -7,6 +7,7 @@ import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
 import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
+import { Footer } from "@/components/falaah/footer";
 import { Loader2 } from "lucide-react";
 
 const MOCK_USER: UserProfile = {
@@ -59,7 +60,6 @@ function DashboardContent() {
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // Select mock user based on role
     if (role === 'santri') setUser(MOCK_USER);
     else if (role === 'ustadz') setUser(MOCK_USTADZ);
     else if (role === 'wali') setUser(MOCK_WALI);
@@ -83,6 +83,7 @@ function DashboardContent() {
         {role === 'ustadz' && <UstadzDashboard />}
         {role === 'wali' && <WaliDashboard />}
       </main>
+      <Footer />
     </div>
   );
 }

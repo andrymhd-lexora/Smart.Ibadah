@@ -157,12 +157,6 @@ export function WaliDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <footer className="text-center pt-8">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
-          Dikembangkan untuk Rumah Tahfidz Ikhsan
-        </p>
-      </footer>
     </div>
   );
 }
