@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useRef } from "react";
@@ -31,7 +32,8 @@ import {
   Send,
   LayoutGrid,
   List,
-  Copy
+  Copy,
+  Info
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -100,9 +102,9 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Tahfidz Specific States
+  // Tahfidz & Doa Recording States
   const [tahfidzViewMode, setTahfidzViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedSurahForSetoran, setSelectedSurahForSetoran] = useState<Surah | null>(null);
+  const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<{name: string, type: 'surah' | 'doa'} | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -207,10 +209,10 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
 
   const sendRecording = () => {
     toast({
-      title: "Hafalan Dikirim!",
-      description: `Rekaman hafalan ${selectedSurahForSetoran?.name} berhasil dikirim ke Ustadz.`,
+      title: "Setoran Dikirim!",
+      description: `Rekaman ${selectedItemForSetoran?.name} berhasil dikirim ke Ustadz.`,
     });
-    setSelectedSurahForSetoran(null);
+    setSelectedItemForSetoran(null);
     deleteRecording();
   };
 
@@ -407,9 +409,9 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredDoa.map((doa) => (
-              <Card key={doa.id} className="glass-card border-none bg-card/40">
+              <Card key={doa.id} className="glass-card border-none bg-card/40 flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-3">
@@ -426,7 +428,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <p className="text-3xl text-right font-headline leading-loose text-foreground">
                     {doa.arabic}
                   </p>
@@ -437,6 +439,44 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                     <p className="text-sm text-muted-foreground">
                       {doa.translation}
                     </p>
+                  </div>
+
+                  {/* Task Actions for Doa */}
+                  <div className="pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-primary/10 p-1.5 rounded-full">
+                        <Info className="w-3 h-3 text-primary" />
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Selesaikan Tugas</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-9 border-primary/20 hover:bg-primary/10 text-primary font-bold text-[10px] uppercase gap-1"
+                        onClick={() => setSelectedItemForSetoran({ name: doa.title, type: 'doa' })}
+                      >
+                        <Mic className="w-3 h-3" />
+                        Rekam
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-9 border-accent/20 hover:bg-accent/10 text-accent font-bold text-[10px] uppercase gap-1"
+                      >
+                        <Play className="w-3 h-3" />
+                        Play
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-9 border-white/10 hover:bg-white/5 text-foreground font-bold text-[10px] uppercase gap-1"
+                        onClick={() => toast({ title: "Kirim Tugas", description: `Menyiapkan setoran ${doa.title}...` })}
+                      >
+                        <Send className="w-3 h-3" />
+                        Kirim
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -495,7 +535,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                     <h3 className="text-xl font-bold mb-6">{surah.name}</h3>
                     <Button 
                       className="w-full bg-white text-primary border border-primary/20 hover:bg-primary/10 rounded-xl py-6 font-bold flex items-center gap-2"
-                      onClick={() => setSelectedSurahForSetoran(surah)}
+                      onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}
                     >
                       <Mic className="w-5 h-5" />
                       Setor Hafalan
@@ -525,7 +565,7 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                       <Button 
                         variant="outline"
                         className="border-primary/20 text-primary hover:bg-primary/10"
-                        onClick={() => setSelectedSurahForSetoran(surah)}
+                        onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}
                       >
                         <Mic className="w-4 h-4 mr-2" />
                         Setor
@@ -650,17 +690,17 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
       )}
 
       {/* Recording Dialog */}
-      <Dialog open={!!selectedSurahForSetoran} onOpenChange={() => {
-        if (!isRecording) setSelectedSurahForSetoran(null);
+      <Dialog open={!!selectedItemForSetoran} onOpenChange={() => {
+        if (!isRecording) setSelectedItemForSetoran(null);
       }}>
         <DialogContent className="glass-card sm:max-w-md border-white/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mic className="w-5 h-5 text-primary" />
-              Setoran: {selectedSurahForSetoran?.name}
+              Setoran: {selectedItemForSetoran?.name}
             </DialogTitle>
             <DialogDescription>
-              Rekam hafalan Anda dengan jelas kemudian kirimkan ke Ustadz.
+              Rekam bacaan Anda dengan jelas kemudian kirimkan ke Ustadz.
             </DialogDescription>
           </DialogHeader>
 
