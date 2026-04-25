@@ -26,7 +26,13 @@ import {
   Pause,
   Volume2,
   Search,
-  AlertCircle
+  AlertCircle,
+  Mic,
+  Square,
+  Trash2,
+  Send,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +43,14 @@ import { Input } from "@/components/ui/input";
 import { getPersonalizedMotivation } from "@/ai/flows/personalized-motivation-ai";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SantriDashboardProps {
   user: UserProfile;
@@ -54,17 +68,17 @@ interface Surah {
 }
 
 const SURAHS: Surah[] = [
-  { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Pembukaan", totalVerses: 7 },
-  { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Sapi", totalVerses: 286 },
-  { number: 3, name: "Ali 'Imran", arabicName: "آl عمران", revelationType: "Keluarga Imran", totalVerses: 200 },
-  { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Wanita", totalVerses: 176 },
-  { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Hidangan", totalVerses: 120 },
-  { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Binatang Ternak", totalVerses: 165 },
-  { number: 30, name: "An-Naba'", arabicName: "النبأ", revelationType: "Berita Besar", totalVerses: 40 },
-  { number: 108, name: "Al-Kauthar", arabicName: "الكوثر", revelationType: "Nikmat Berlimpah", totalVerses: 3 },
-  { number: 112, name: "Al-Ikhlas", arabicName: "الإخلاص", revelationType: "Ikhlas", totalVerses: 4 },
-  { number: 113, name: "Al-Falaq", arabicName: "الفلق", revelationType: "Waktu Subuh", totalVerses: 5 },
-  { number: 114, name: "An-Nas", arabicName: "الناس", revelationType: "Manusia", totalVerses: 6 },
+  { number: 1, name: "Al-Fatihah", arabicName: "الفاتحة", revelationType: "Mekah", totalVerses: 7 },
+  { number: 2, name: "Al-Baqarah", arabicName: "البقرة", revelationType: "Madinah", totalVerses: 286 },
+  { number: 3, name: "Ali 'Imran", arabicName: "آل عمران", revelationType: "Madinah", totalVerses: 200 },
+  { number: 4, name: "An-Nisa'", arabicName: "النساء", revelationType: "Madinah", totalVerses: 176 },
+  { number: 5, name: "Al-Ma'idah", arabicName: "المائدة", revelationType: "Madinah", totalVerses: 120 },
+  { number: 6, name: "Al-An'am", arabicName: "الأنعام", revelationType: "Mekah", totalVerses: 165 },
+  { number: 78, name: "An-Naba'", arabicName: "النبأ", revelationType: "Mekah", totalVerses: 40 },
+  { number: 108, name: "Al-Kauthar", arabicName: "الكوثر", revelationType: "Mekah", totalVerses: 3 },
+  { number: 112, name: "Al-Ikhlas", arabicName: "الإخلاص", revelationType: "Mekah", totalVerses: 4 },
+  { number: 113, name: "Al-Falaq", arabicName: "الفلق", revelationType: "Mekah", totalVerses: 5 },
+  { number: 114, name: "An-Nas", arabicName: "الناس", revelationType: "Mekah", totalVerses: 6 },
 ];
 
 const QORIS = [
@@ -80,11 +94,21 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
   
-  // Talaqqi States
+  // Talaqqi & Tahfidz States
   const [selectedQori, setSelectedQori] = useState(QORIS[0]);
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
   const [searchSurah, setSearchSurah] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Tahfidz Specific States
+  const [tahfidzViewMode, setTahfidzViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedSurahForSetoran, setSelectedSurahForSetoran] = useState<Surah | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentRank = getRankByExp(user.totalExp);
   const nextRank = getNextRank(user.totalExp);
@@ -118,7 +142,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
       setPlayingSurah(null);
     } else {
       setPlayingSurah(surahNumber);
-      // Constructing a reliable source for audio
       const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/${selectedQori.id}/${surahNumber}.mp3`;
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
@@ -133,6 +156,63 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
         });
       }
     }
+  };
+
+  // Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Gagal mengakses mikrofone:", err);
+      toast({
+        variant: "destructive",
+        title: "Gagal Mengakses Mikrofon",
+        description: "Pastikan Anda memberikan izin akses mikrofon di browser.",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const deleteRecording = () => {
+    setAudioUrl(null);
+    setRecordingTime(0);
+  };
+
+  const sendRecording = () => {
+    toast({
+      title: "Hafalan Dikirim!",
+      description: `Rekaman hafalan ${selectedSurahForSetoran?.name} berhasil dikirim ke Ustadz.`,
+    });
+    setSelectedSurahForSetoran(null);
+    deleteRecording();
   };
 
   const navItems = [
@@ -151,9 +231,14 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     s.number.toString() === searchSurah
   );
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="space-y-6 pb-12">
-      {/* Hidden Audio Element with robust error handling */}
       <audio 
         ref={audioRef} 
         onEnded={() => setPlayingSurah(null)} 
@@ -272,46 +357,102 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </Card>
           </div>
         </div>
-      ) : activeTab === 'tugas-guru' ? (
+      ) : activeTab === 'tahfidz' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex items-start gap-4">
-            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-lg">
-              <Target className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-primary-foreground flex items-center gap-2">
-                Tugas Hafalan dari Guru
-              </h2>
-              <p className="text-sm text-primary-foreground/80 mt-1">
-                Setor hafalan untuk setiap target yang diberikan gurumu.
-              </p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              Pilih Materi Tahfidz 📖
+            </h2>
+            <div className="flex bg-secondary/30 rounded-lg p-1">
+              <Button 
+                variant={tahfidzViewMode === 'grid' ? "secondary" : "ghost"} 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setTahfidzViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={tahfidzViewMode === 'list' ? "secondary" : "ghost"} 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setTahfidzViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" className="rounded-full bg-primary text-primary-foreground font-bold">
-              Semua (0)
-            </Button>
-            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
-              ⏳ Belum Setor
-            </Button>
-            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
-              🕒 Menunggu Nilai
-            </Button>
-            <Button size="sm" variant="outline" className="rounded-full bg-card/50">
-              ✅ Sudah Dinilai
-            </Button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Cari surat untuk setoran..." 
+              className="pl-9 glass-card h-12"
+              value={searchSurah}
+              onChange={(e) => setSearchSurah(e.target.value)}
+            />
           </div>
 
-          <Card className="glass-card border-dashed border-2 flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
-            <Target className="w-12 h-12 mb-4 opacity-20" />
-            <p>Belum ada tugas hafalan yang diberikan hari ini.</p>
-            <Button variant="link" className="text-primary mt-2">Segarkan Halaman</Button>
-          </Card>
+          {tahfidzViewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredSurahs.map((surah) => (
+                <Card key={surah.number} className="glass-card hover:border-primary/50 transition-all border-none bg-card/40">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                        {surah.number}
+                      </div>
+                      <div className="text-3xl font-bold text-foreground font-headline">
+                        {surah.arabicName}
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-6">{surah.name}</h3>
+                    <Button 
+                      className="w-full bg-white text-primary border border-primary/20 hover:bg-primary/10 rounded-xl py-6 font-bold flex items-center gap-2"
+                      onClick={() => setSelectedSurahForSetoran(surah)}
+                    >
+                      <Mic className="w-5 h-5" />
+                      Setor Hafalan
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredSurahs.map((surah) => (
+                <Card key={surah.number} className="glass-card hover:border-primary/50 transition-all border-none bg-card/40">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                        {surah.number}
+                      </div>
+                      <div>
+                        <h4 className="font-bold">{surah.name}</h4>
+                        <p className="text-xs text-muted-foreground">{surah.revelationType} • {surah.totalVerses} Ayat</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-xl font-bold text-foreground hidden sm:block">
+                        {surah.arabicName}
+                      </div>
+                      <Button 
+                        variant="outline"
+                        className="border-primary/20 text-primary hover:bg-primary/10"
+                        onClick={() => setSelectedSurahForSetoran(surah)}
+                      >
+                        <Mic className="w-4 h-4 mr-2" />
+                        Setor
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       ) : activeTab === 'talaqqi' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Talaqqi Header */}
           <div className="bg-[#E9F7F3] dark:bg-primary/10 border border-primary/20 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-2">
               <Headphones className="w-5 h-5 text-primary" />
@@ -348,7 +489,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </ScrollArea>
           </div>
 
-          {/* Surah List Header & Search */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4">
             <h3 className="text-2xl font-bold flex items-center gap-2">
               Daftar Surat Al-Quran 📖
@@ -364,7 +504,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
             </div>
           </div>
 
-          {/* Surah Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredSurahs.map((surah) => (
               <Card key={surah.number} className="glass-card hover:border-primary/50 transition-all group overflow-hidden border-none bg-card/40">
@@ -414,12 +553,6 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               </Card>
             ))}
           </div>
-
-          {filteredSurahs.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Surat "{searchSurah}" tidak ditemukan.</p>
-            </div>
-          )}
         </div>
       ) : (
         <Card className="glass-card p-12 text-center animate-in fade-in duration-300">
@@ -429,6 +562,79 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
           </Button>
         </Card>
       )}
+
+      {/* Recording Dialog */}
+      <Dialog open={!!selectedSurahForSetoran} onOpenChange={() => {
+        if (!isRecording) setSelectedSurahForSetoran(null);
+      }}>
+        <DialogContent className="glass-card sm:max-w-md border-white/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mic className="w-5 h-5 text-primary" />
+              Setoran: {selectedSurahForSetoran?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Rekam hafalan Anda dengan jelas kemudian kirimkan ke Ustadz.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            <div className={cn(
+              "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300",
+              isRecording ? "bg-red-500 animate-pulse scale-110" : "bg-primary/20"
+            )}>
+              {isRecording ? (
+                <Square className="w-8 h-8 text-white fill-current" />
+              ) : (
+                <Mic className="w-10 h-10 text-primary" />
+              )}
+            </div>
+
+            <div className="text-3xl font-mono font-bold">
+              {formatTime(recordingTime)}
+            </div>
+
+            {audioUrl && !isRecording && (
+              <div className="w-full space-y-2">
+                <p className="text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">Pratinjau Rekaman</p>
+                <audio src={audioUrl} controls className="w-full" />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-row gap-2 sm:justify-center">
+            {!audioUrl ? (
+              <Button 
+                className={cn(
+                  "flex-1 font-bold h-12",
+                  isRecording ? "bg-red-500 hover:bg-red-600" : "bg-primary"
+                )}
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                {isRecording ? "Selesai Rekam" : "Mulai Rekam"}
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 border-destructive/20 text-destructive hover:bg-destructive/10 h-12"
+                  onClick={deleteRecording}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Hapus
+                </Button>
+                <Button 
+                  className="flex-1 bg-primary font-bold h-12"
+                  onClick={sendRecording}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Kirim Suara
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <footer className="text-center pt-8">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium opacity-50">
