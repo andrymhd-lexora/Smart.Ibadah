@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -40,7 +41,9 @@ import {
   History,
   AlertCircle,
   Calendar as CalendarIcon,
-  XCircle
+  XCircle,
+  Hourglass,
+  PartyPopper
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -72,6 +75,15 @@ interface SantriDashboardProps {
 }
 
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
+type TaskStatus = 'Semua' | 'Belum Setor' | 'Menunggu Nilai' | 'Sudah Dinilai';
+
+interface TeacherTask {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  deadline?: string;
+}
 
 const QORIS = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
@@ -87,6 +99,11 @@ const MOCK_ATTENDANCE = [
   { date: new Date(2025, 2, 3), hasReport: false },
   { date: new Date(2025, 2, 4), hasReport: true },
   { date: new Date(2025, 2, 5), hasReport: false },
+];
+
+const MOCK_TASKS: TeacherTask[] = [
+  // Contoh data tugas jika ingin menampilkan sesuatu
+  // { id: '1', title: 'Hafalan Al-Baqarah 1-10', description: 'Setorkan hafalan lancar tanpa melihat.', status: 'Belum Setor' }
 ];
 
 export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
@@ -118,6 +135,8 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [taskFilter, setTaskFilter] = useState<TaskStatus>('Semua');
 
   const currentRank = getRankByExp(user.totalExp);
   const nextRank = getNextRank(user.totalExp);
@@ -242,6 +261,11 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
     { id: 'rank', label: 'Rank', icon: Trophy },
   ];
 
+  const filteredTasks = MOCK_TASKS.filter(task => {
+    if (taskFilter === 'Semua') return true;
+    return task.status === taskFilter;
+  });
+
   return (
     <div className="space-y-6 pb-12">
       <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
@@ -339,6 +363,197 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                 <Button variant="link" className="p-0 text-xs text-emerald-500" onClick={() => setActiveTab('tahfidz')}>Lihat Progress <ArrowRight className="w-3 h-3 ml-1"/></Button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      ) : activeTab === 'tugas-guru' ? (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Header Section Sesuai Foto */}
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-3xl p-8 border border-emerald-100 dark:border-emerald-900/30">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-white dark:bg-card p-2 rounded-xl shadow-sm border border-emerald-100 dark:border-white/5">
+                <Target className="w-6 h-6 text-pink-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">Tugas Hafalan dari Guru</h2>
+            </div>
+            <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+              Setor hafalan untuk setiap target yang diberikan gurumu.
+            </p>
+          </div>
+
+          {/* Filter Status Sesuai Foto */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant={taskFilter === 'Semua' ? 'default' : 'outline'}
+              className={cn("rounded-full px-6 h-11 font-bold", taskFilter === 'Semua' && "bg-emerald-600 hover:bg-emerald-700")}
+              onClick={() => setTaskFilter('Semua')}
+            >
+              Semua ({MOCK_TASKS.length})
+            </Button>
+            <Button
+              variant={taskFilter === 'Belum Setor' ? 'default' : 'outline'}
+              className={cn("rounded-full px-6 h-11 font-bold gap-2", taskFilter === 'Belum Setor' && "bg-emerald-600 hover:bg-emerald-700")}
+              onClick={() => setTaskFilter('Belum Setor')}
+            >
+              <Hourglass className="w-4 h-4" />
+              Belum Setor
+            </Button>
+            <Button
+              variant={taskFilter === 'Menunggu Nilai' ? 'default' : 'outline'}
+              className={cn("rounded-full px-6 h-11 font-bold gap-2", taskFilter === 'Menunggu Nilai' && "bg-emerald-600 hover:bg-emerald-700")}
+              onClick={() => setTaskFilter('Menunggu Nilai')}
+            >
+              <History className="w-4 h-4" />
+              Menunggu Nilai
+            </Button>
+            <Button
+              variant={taskFilter === 'Sudah Dinilai' ? 'default' : 'outline'}
+              className={cn("rounded-full px-6 h-11 font-bold gap-2", taskFilter === 'Sudah Dinilai' && "bg-emerald-600 hover:bg-emerald-700")}
+              onClick={() => setTaskFilter('Sudah Dinilai')}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Sudah Dinilai
+            </Button>
+          </div>
+
+          {/* List Section Sesuai Foto (Empty State) */}
+          <div className="bg-secondary/20 rounded-[2.5rem] p-24 flex flex-col items-center justify-center text-center space-y-4 border border-dashed border-white/10">
+            <div className="relative">
+              <PartyPopper className="w-16 h-16 text-primary/60" />
+              <div className="absolute -top-1 -right-1">
+                <Star className="w-6 h-6 text-accent fill-accent animate-bounce" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-foreground/80">Tidak ada tugas di kategori ini</h3>
+          </div>
+        </div>
+      ) : activeTab === 'talaqqi' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/30 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white dark:bg-card p-3 rounded-xl shadow-sm"><Headphones className="w-8 h-8 text-primary" /></div>
+              <div><h2 className="text-xl font-bold">Mode Talaqqi</h2><p className="text-sm text-muted-foreground">Dengarkan dan ikuti bacaan Qori untuk memperlancar hafalan.</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Qori:</span>
+              <ScrollArea className="w-48 whitespace-nowrap"><div className="flex gap-2 pb-2">
+                {QORIS.map(q => <Button key={q.id} variant={selectedQori.id === q.id ? "default" : "outline"} size="sm" className="rounded-full text-[10px] h-8" onClick={() => setSelectedQori(q)}>{q.name}</Button>)}
+              </div><ScrollBar orientation="horizontal" /></ScrollArea>
+            </div>
+          </div>
+          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Cari nama surat..." className="pl-9 glass-card h-12" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ALL_SURAHS.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((surah) => (
+              <Card key={surah.number} className={cn("glass-card border-none bg-card/40 hover:bg-card/60 transition-all group overflow-hidden", playingSurah === surah.number && "ring-2 ring-primary bg-primary/5 shadow-xl")}>
+                <div className="p-4 flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center font-bold text-xs">{surah.number}</div>
+                    <div><h3 className="font-bold text-lg">{surah.name}</h3><p className="text-[10px] text-muted-foreground uppercase">{surah.revelationType} • {surah.totalVerses} Ayat</p></div>
+                  </div>
+                  <div className="text-2xl font-headline text-primary/80">{surah.arabicName}</div>
+                </div>
+                <div className="px-4 pb-4 flex gap-2">
+                  <Button className={cn("flex-1 font-bold text-xs h-9 rounded-full transition-all", playingSurah === surah.number ? "bg-destructive text-white" : "bg-primary text-primary-foreground")} onClick={() => togglePlay(surah.number)}>
+                    {playingSurah === surah.number ? <><Pause className="w-3 h-3 mr-2" />Berhenti</> : <><Play className="w-3 h-3 mr-2" />Putar Murottal</>}
+                  </Button>
+                  <Button variant="outline" size="icon" className="rounded-full h-9 w-9 border-primary/20 hover:bg-primary/10 transition-colors" onClick={() => { setActiveTab('tahfidz'); toast({ title: "Siap Setoran", description: `Mulai hafalkan surat ${surah.name}` }); }}><Target className="w-4 h-4 text-primary" /></Button>
+                </div>
+                {playingSurah === surah.number && <div className="absolute bottom-0 left-0 h-1 bg-primary animate-progress-glow w-full origin-left"></div>}
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : activeTab === 'tahfidz' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+            <div className="flex items-center gap-4">
+              <div className="bg-white dark:bg-card p-3 rounded-xl shadow-sm"><BookOpen className="w-8 h-8 text-primary" /></div>
+              <div><h2 className="text-xl font-bold">Target Tahfidz</h2><p className="text-sm text-muted-foreground">Kirim setoran hafalan baru atau muroja'ah.</p></div>
+            </div>
+            <div className="flex items-center gap-2 bg-secondary/30 p-1 rounded-lg">
+              <Button variant={tahfidzViewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="w-8 h-8" onClick={() => setTahfidzViewMode('grid')}><LayoutGrid className="w-4 h-4" /></Button>
+              <Button variant={tahfidzViewMode === 'list' ? 'secondary' : 'ghost'} size="icon" className="w-8 h-8" onClick={() => setTahfidzViewMode('list')}><List className="w-4 h-4" /></Button>
+            </div>
+          </div>
+          {tahfidzViewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ALL_SURAHS.slice(0, 37).reverse().map((surah) => (
+                <Card key={surah.number} className="glass-card border-none bg-card/40 hover:border-primary/20 transition-all flex flex-col">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <Badge variant="outline" className="text-[10px] font-bold">Surat ke-{surah.number}</Badge>
+                      <span className="text-2xl font-headline text-primary">{surah.arabicName}</span>
+                    </div>
+                    <CardTitle className="text-lg mt-1">{surah.name}</CardTitle>
+                    <CardDescription className="text-[10px] uppercase tracking-widest">{surah.totalVerses} Ayat</CardDescription>
+                  </CardHeader>
+                  <CardContent className="mt-auto pt-4 border-t border-white/5 flex gap-2">
+                    <Button className="flex-1 bg-primary text-primary-foreground font-bold text-xs h-9 rounded-full" onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}><Mic className="w-3 h-3 mr-2" />Setor Hafalan</Button>
+                    {tahfidzSubmissions.includes(surah.name) && <div className="bg-emerald-500/10 p-2 rounded-full"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="glass-card border-none bg-card/40 overflow-hidden">
+              <div className="divide-y divide-white/5">
+                {ALL_SURAHS.slice(0, 37).reverse().map((surah) => (
+                  <div key={surah.number} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded bg-secondary/50 flex items-center justify-center font-mono text-[10px]">{surah.number}</div>
+                      <div><h4 className="font-bold text-sm">{surah.name}</h4><p className="text-[10px] text-muted-foreground uppercase">{surah.totalVerses} Ayat</p></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-headline mr-4 opacity-60">{surah.arabicName}</span>
+                      <Button variant="outline" size="sm" className="h-8 text-[10px] rounded-full border-primary/20 font-bold" onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}><Mic className="w-3 h-3 mr-1" />Setor</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      ) : activeTab === 'hadits' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold flex items-center gap-2"><ScrollText className="w-6 h-6 text-primary" />30 Hadits Pilihan 📜</h2>
+            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Cari hadits..." className="pl-9 glass-card h-12" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {HADITS_LIST.filter(h => h.title.toLowerCase().includes(searchQuery.toLowerCase())).map((hadits) => (
+              <Card key={hadits.id} className="glass-card border-none bg-card/40 flex flex-col">
+                <CardHeader className="pb-2"><div className="flex justify-between"><Badge variant="outline">Hadits {hadits.id}</Badge><span className="text-xs text-muted-foreground">{hadits.source}</span></div><CardTitle className="text-lg mt-2">{hadits.title}</CardTitle></CardHeader>
+                <CardContent className="space-y-4 flex-1">
+                  <div className="p-4 rounded-lg bg-white/5 relative group"><p className="text-2xl text-right font-headline text-primary">{hadits.arabic}</p><Button variant="ghost" size="icon" className="absolute top-2 left-2 opacity-0 group-hover:opacity-100" onClick={() => { navigator.clipboard.writeText(hadits.arabic); toast({ title: "Disalin" }); }}><Copy className="w-3 h-3" /></Button></div>
+                  <p className="text-sm text-muted-foreground italic">"{hadits.translation}"</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : activeTab === 'doa' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold flex items-center gap-2"><HandHeart className="w-6 h-6 text-accent" />30 Doa & Dzikir Harian 🙏</h2>
+            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Cari doa..." className="pl-9 glass-card h-12" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {DOA_LIST.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).map((doa) => (
+              <Card key={doa.id} className="glass-card border-none bg-card/40">
+                <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-lg">{doa.title}</CardTitle><Badge>{doa.category}</Badge></div></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-3xl text-right font-headline">{doa.arabic}</p>
+                  <p className="text-xs font-bold text-accent italic">{doa.latin}</p>
+                  <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div className="flex items-center gap-2"><Info className="w-3 h-3 text-primary" /><span className="text-[10px] uppercase font-bold text-muted-foreground">Selesaikan Tugas</span></div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button size="sm" variant="outline" className="h-9 border-primary/20" onClick={() => setSelectedItemForSetoran({ name: doa.title, type: 'doa' })}><Mic className="w-3 h-3 mr-2" />Rekam</Button>
+                      <Button size="sm" variant="outline" className="h-9 border-accent/20"><Play className="w-3 h-3 mr-2" />Play</Button>
+                      <Button size="sm" variant="outline" className="h-9"><Send className="w-3 h-3 mr-2" />Kirim</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       ) : activeTab === 'mutabaah' ? (
@@ -446,58 +661,14 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
                     </div>
                   ) : (
                     <div className="py-4 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto opacity-50"><AlertCircle className="w-6 h-6 text-muted-foreground" /></div>
+                      <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto opacity-50"><AlertCircle className="w-6 h-6 text-muted-foreground" /></div>
                       <p className="text-sm text-muted-foreground italic">Belum ada setoran hari ini</p>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab('tahfidz')}>Ke Tab Tahfidz</Button>
+                      <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold tracking-widest" onClick={() => setActiveTab('tahfidz')}>Ke Tab Tahfidz</Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </div>
-      ) : activeTab === 'hadits' ? (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2"><ScrollText className="w-6 h-6 text-primary" />30 Hadits Pilihan 📜</h2>
-            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Cari hadits..." className="pl-9 glass-card h-12" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {HADITS_LIST.filter(h => h.title.toLowerCase().includes(searchQuery.toLowerCase())).map((hadits) => (
-              <Card key={hadits.id} className="glass-card border-none bg-card/40 flex flex-col">
-                <CardHeader className="pb-2"><div className="flex justify-between"><Badge variant="outline">Hadits {hadits.id}</Badge><span className="text-xs text-muted-foreground">{hadits.source}</span></div><CardTitle className="text-lg mt-2">{hadits.title}</CardTitle></CardHeader>
-                <CardContent className="space-y-4 flex-1">
-                  <div className="p-4 rounded-lg bg-white/5 relative group"><p className="text-2xl text-right font-headline text-primary">{hadits.arabic}</p><Button variant="ghost" size="icon" className="absolute top-2 left-2 opacity-0 group-hover:opacity-100" onClick={() => { navigator.clipboard.writeText(hadits.arabic); toast({ title: "Disalin" }); }}><Copy className="w-3 h-3" /></Button></div>
-                  <p className="text-sm text-muted-foreground italic">"{hadits.translation}"</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      ) : activeTab === 'doa' ? (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2"><HandHeart className="w-6 h-6 text-accent" />30 Doa & Dzikir Harian 🙏</h2>
-            <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Cari doa..." className="pl-9 glass-card h-12" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {DOA_LIST.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).map((doa) => (
-              <Card key={doa.id} className="glass-card border-none bg-card/40">
-                <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-lg">{doa.title}</CardTitle><Badge>{doa.category}</Badge></div></CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-3xl text-right font-headline">{doa.arabic}</p>
-                  <p className="text-xs font-bold text-accent italic">{doa.latin}</p>
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <div className="flex items-center gap-2"><Info className="w-3 h-3 text-primary" /><span className="text-[10px] uppercase font-bold text-muted-foreground">Selesaikan Tugas</span></div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button size="sm" variant="outline" className="h-9 border-primary/20" onClick={() => setSelectedItemForSetoran({ name: doa.title, type: 'doa' })}><Mic className="w-3 h-3 mr-2" />Rekam</Button>
-                      <Button size="sm" variant="outline" className="h-9 border-accent/20"><Play className="w-3 h-3 mr-2" />Play</Button>
-                      <Button size="sm" variant="outline" className="h-9"><Send className="w-3 h-3 mr-2" />Kirim</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       ) : (
