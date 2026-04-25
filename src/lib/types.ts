@@ -7,6 +7,9 @@ export interface UserProfile {
   role: UserRole;
   totalExp: number;
   streak: number;
+  school?: string;
+  class?: string;
+  photoUrl?: string;
   studentId?: string; // For Wali link
   linkedStudents?: string[]; // For Wali
 }

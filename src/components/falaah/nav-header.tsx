@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { getRankByExp } from "@/lib/constants";
 import { UserProfile } from "@/lib/types";
-import { Flame, LogOut, User } from "lucide-react";
+import { Flame, LogOut, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface NavHeaderProps {
   user: UserProfile;
@@ -21,12 +23,16 @@ interface NavHeaderProps {
 }
 
 export function NavHeader({ user, onLogout }: NavHeaderProps) {
+  const router = useRouter();
   const rank = useMemo(() => getRankByExp(user.totalExp), [user.totalExp]);
 
   return (
     <header className="sticky top-0 z-50 w-full glass-card border-b bg-background/80 px-4 py-3 md:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link 
+          href={`/dashboard?role=${user.role}`}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        >
           <div className="bg-primary/20 p-2 rounded-lg">
             <span className="text-xl font-headline font-bold text-primary italic">F</span>
           </div>
@@ -34,7 +40,7 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
             <h1 className="text-lg font-headline font-bold leading-none tracking-tight">Falaah v.1.0</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Rumah Tahfidz Ikhsan</p>
           </div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-secondary rounded-full border">
@@ -50,7 +56,8 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-9 w-9 border-2 border-primary/20">
+                  <AvatarImage src={user.photoUrl} alt={user.name} />
                   <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                     {user.name.charAt(0)}
                   </AvatarFallback>
@@ -60,11 +67,22 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
             <DropdownMenuContent align="end" className="w-56 glass-card">
               <DropdownMenuLabel className="font-headline">Akun Saya</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-2">
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => router.push(`/profile?role=${user.role}`)}
+              >
                 <User className="w-4 h-4" />
-                <span>Profil</span>
+                <span>Profil & Biodata</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onLogout} className="flex items-center gap-2 text-destructive">
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => router.push(`/dashboard?role=${user.role}`)}
+              >
+                <Home className="w-4 h-4" />
+                <span>Dashboard</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onLogout} className="flex items-center gap-2 text-destructive cursor-pointer">
                 <LogOut className="w-4 h-4" />
                 <span>Keluar</span>
               </DropdownMenuItem>
