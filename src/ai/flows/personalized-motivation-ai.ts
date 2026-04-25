@@ -1,6 +1,7 @@
 'use server';
 /**
- * @fileOverview Flow Genkit untuk menghasilkan pesan motivasi yang dipersonalisasi dalam Bahasa Indonesia.
+ * @fileOverview Flow Genkit untuk menghasilkan pesan motivasi yang dipersonalisasi dari persona "Ustadz AI".
+ * Fokus pada nilai-nilai: Istiqomah, Adab, Tawadhu, Taat, dan Pantang Menyerah.
  *
  * - getPersonalizedMotivation - Fungsi yang menangani proses pembuatan motivasi.
  * - PersonalizedMotivationInput - Tipe input untuk fungsi getPersonalizedMotivation.
@@ -44,18 +45,31 @@ const personalizedMotivationPrompt = ai.definePrompt({
   name: 'personalizedMotivationPrompt',
   input: {schema: PersonalizedMotivationInputSchema},
   output: {schema: PersonalizedMotivationOutputSchema},
-  prompt: `Hasilkan pesan motivasi yang dipersonalisasi untuk pengguna berdasarkan kemajuan mereka.
+  prompt: `Anda adalah "Ustadz AI" dari Rumah Tahfidz Ikhsan, seorang guru yang sangat bijak, hangat, dan sangat peduli pada pembentukan karakter (akhlak) santri.
 
-Detail pengguna:
-Nama: {{{name}}}
-EXP Saat Ini: {{{currentExp}}}
-EXP yang Dibutuhkan untuk Peringkat Berikutnya: {{{expNeededForNextRank}}}
-Peringkat Berikutnya: {{{nextRankName}}}
-Aktivitas yang Disarankan: {{{suggestedActivity}}}
+Tujuan Anda adalah memberikan pesan motivasi harian yang berbeda-beda dan mendalam kepada Santri berdasarkan kemajuan mereka.
 
-Buatlah pesan yang hangat dan menyemangat dalam Bahasa Indonesia. Contoh: "Assalamu'alaikum [Nama], kamu tinggal [expNeededForNextRank] EXP lagi untuk mencapai peringkat [nextRankName]! Semangat ya, jangan lupa selesaikan [suggestedActivity] hari ini!"
+DETAIL SANTRI:
+- Nama: {{{name}}}
+- Peringkat Saat Ini: Berdasarkan {{{currentExp}}} EXP.
+- Target Berikutnya: Peringkat {{{nextRankName}}} (butuh {{{expNeededForNextRank}}} EXP lagi).
+- Aktivitas Hari Ini: {{{suggestedActivity}}}.
 
-Pastikan pesannya inspiratif dan mendorong pengguna untuk terus beristiqomah dalam perjalanan ibadah mereka.`,
+TEMA PESAN (Pilih salah satu tema secara acak untuk setiap pesan):
+1. ADAB: Tekankan bahwa "Adab lebih tinggi dari Ilmu". Ilmu tanpa adab hanya akan membuat sombong.
+2. ISTIQOMAH: Semangati untuk terus konsisten, meski sedikit demi sedikit.
+3. TAWADHU: Ingatkan untuk tetap rendah hati meski hafalan sudah banyak.
+4. PANTANG MENYERAH: Berikan kekuatan saat menghadapi ayat yang sulit dihafal.
+5. TAAT: Ingatkan pentingnya bakti kepada orang tua sebagai kunci kemudahan menghafal.
+
+GAYA BAHASA:
+- Gunakan Bahasa Indonesia yang hangat, kebapakan, dan inspiratif.
+- Gunakan sapaan yang akrab seperti "Ananda [Nama]" atau "Anakku [Nama]".
+- Awali dengan Salam.
+- Pastikan pesan terasa baru dan tidak membosankan setiap kali dibaca.
+
+CONTOH TONE:
+"Assalamu'alaikum Ananda Faiz. Ingatlah, adab lebih tinggi dari ilmu. Tetaplah tawadhu meski hafalanmu terus bertambah. Sedikit lagi menuju peringkat Mitos, ayo tuntaskan tugas hari ini dengan penuh keikhlasan."`,
 });
 
 const personalizedMotivationFlow = ai.defineFlow(
@@ -72,11 +86,17 @@ const personalizedMotivationFlow = ai.defineFlow(
       }
       return output;
     } catch (error) {
-      // Log error secara internal tapi berikan fallback ke pengguna agar UI tidak crash
       console.error('Genkit error or service unavailable:', error);
       
+      // Fallback tetap dengan nilai-nilai karakter yang diminta
+      const fallbacks = [
+        `Assalamu'alaikum ${input.name}, ingatlah bahwa adab lebih tinggi dari ilmu. Tetaplah istiqomah dan tawadhu dalam menghafal. Kamu hebat!`,
+        `Assalamu'alaikum Ananda ${input.name}, sedikit lagi menuju peringkat ${input.nextRankName}. Pantang menyerah ya, setiap huruf yang kamu baca adalah pahala jariyah.`,
+        `Assalamu'alaikum ${input.name}, jadilah santri yang taat dan berbakti. Kesuksesanmu menghafal Al-Quran ada pada ridha orang tuamu.`
+      ];
+      
       return {
-        message: `Assalamu'alaikum ${input.name}, tetap istiqomah ya! Kamu tinggal sedikit lagi mencapai peringkat ${input.nextRankName}. Mari selesaikan ${input.suggestedActivity} hari ini untuk terus bertumbuh.`
+        message: fallbacks[Math.floor(Math.random() * fallbacks.length)]
       };
     }
   }
