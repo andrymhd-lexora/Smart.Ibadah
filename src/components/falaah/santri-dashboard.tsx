@@ -37,7 +37,8 @@ import {
   Copy,
   Info,
   Volume2,
-  History
+  History,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
