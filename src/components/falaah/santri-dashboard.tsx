@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -8,7 +9,8 @@ import {
   EXP_VALUES,
   PRAYERS_WAJIB,
   PRAYERS_SUNNAH,
-  DAILY_IBADAH
+  DAILY_IBADAH,
+  RANKS
 } from "@/lib/constants";
 import { 
   Trophy,
@@ -42,7 +44,13 @@ import {
   Calendar as CalendarIcon,
   XCircle,
   Hourglass,
-  PartyPopper
+  PartyPopper,
+  Zap,
+  Shield,
+  Medal,
+  Crown,
+  Sword,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -663,6 +671,148 @@ export function SantriDashboard({ user, initialLog }: SantriDashboardProps) {
               </Card>
             </div>
           </div>
+        </div>
+      ) : activeTab === 'rank' ? (
+        <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
+          <div className="relative overflow-hidden rounded-[3rem] p-1 bg-gradient-to-br from-blue-600 via-red-500 to-yellow-500 shadow-2xl">
+            <div className="bg-background/90 backdrop-blur-xl rounded-[2.9rem] p-8 md:p-12 relative overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-[100px] rounded-full"></div>
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-accent/20 blur-[100px] rounded-full"></div>
+              
+              <div className="flex flex-col items-center text-center space-y-6 relative z-10">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary blur-3xl opacity-30 animate-pulse"></div>
+                  <div className="relative flex items-center justify-center w-32 h-32 md:w-48 md:h-48 rounded-full border-8 border-primary bg-card shadow-[0_0_50px_rgba(16,185,129,0.5)]">
+                    <span className="text-6xl md:text-8xl animate-bounce">{currentRank.icon}</span>
+                  </div>
+                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-6 py-2 rounded-full font-headline font-bold text-lg uppercase tracking-widest shadow-xl">
+                    {currentRank.name}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="text-4xl md:text-6xl font-headline font-bold tracking-tighter bg-gradient-to-r from-blue-400 via-white to-red-400 bg-clip-text text-transparent">
+                    PAHLAWAN AL-QURAN
+                  </h2>
+                  <p className="text-muted-foreground text-lg uppercase tracking-[0.3em] font-medium">Power Level: {user.totalExp.toLocaleString()} EXP</p>
+                </div>
+
+                <div className="w-full max-w-2xl space-y-4">
+                  <div className="flex justify-between items-end text-sm font-bold">
+                    <div className="flex flex-col items-start">
+                      <span className="text-primary uppercase tracking-widest text-[10px]">Rank Saat Ini</span>
+                      <span className="text-xl">{currentRank.name}</span>
+                    </div>
+                    {nextRank && (
+                      <div className="flex flex-col items-end">
+                        <span className="text-accent uppercase tracking-widest text-[10px]">Target Berikutnya</span>
+                        <span className="text-xl">{nextRank.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative h-6 bg-secondary/50 rounded-full border border-white/10 overflow-hidden shadow-inner">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 via-primary to-accent transition-all duration-1000 ease-out"
+                      style={{ width: `${expProgress}%` }}
+                    >
+                      <div className="absolute top-0 right-0 h-full w-4 bg-white/30 skew-x-12 animate-shine"></div>
+                    </div>
+                  </div>
+                  {nextRank && (
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Butuh <span className="text-accent font-bold">{(nextRank.minExp - user.totalExp).toLocaleString()} EXP</span> lagi untuk mencapai kekuatan <span className="text-foreground font-bold">{nextRank.name}</span>!
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <h3 className="text-2xl font-headline font-bold flex items-center gap-3">
+                <Medal className="w-8 h-8 text-yellow-500" />
+                Pencapaian Pahlawan
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { title: "Sakti Berdoa", icon: <Sparkles className="w-6 h-6" />, desc: "Hafal 30 Doa", color: "text-blue-400" },
+                  { title: "Pakar Hadits", icon: <ScrollText className="w-6 h-6" />, desc: "Hafal 30 Hadits", color: "text-red-400" },
+                  { title: "Super Streak", icon: <Zap className="w-6 h-6" />, desc: "7 Hari Tanpa Putus", color: "text-yellow-400" },
+                  { title: "Pelindung Masjid", icon: <Shield className="w-6 h-6" />, desc: "Sholat 5 Waktu Tepat", color: "text-green-400" },
+                ].map((item, i) => (
+                  <Card key={i} className="glass-card border-white/5 bg-white/5 hover:scale-105 transition-transform cursor-pointer">
+                    <CardContent className="p-6 text-center space-y-3">
+                      <div className={cn("w-12 h-12 mx-auto rounded-full bg-background flex items-center justify-center shadow-lg border border-white/10", item.color)}>
+                        {item.icon}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">{item.title}</h4>
+                        <p className="text-[10px] text-muted-foreground uppercase">{item.desc}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-2xl font-headline font-bold flex items-center gap-3">
+                <Crown className="w-8 h-8 text-accent" />
+                Galeri Peringkat
+              </h3>
+              <div className="space-y-3">
+                {RANKS.map((rank) => {
+                  const isCurrent = currentRank.name === rank.name;
+                  const isUnlocked = user.totalExp >= rank.minExp;
+                  
+                  return (
+                    <div 
+                      key={rank.name}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                        isCurrent ? "bg-primary/20 border-primary ring-2 ring-primary/50 shadow-xl scale-105" :
+                        isUnlocked ? "bg-secondary/40 border-white/10 opacity-80" :
+                        "bg-background border-dashed border-white/5 opacity-40 grayscale"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-3xl">{rank.icon}</span>
+                        <div>
+                          <h4 className="font-bold uppercase tracking-tighter">{rank.name}</h4>
+                          <p className="text-[10px] text-muted-foreground">{rank.minExp.toLocaleString()} EXP Minimal</p>
+                        </div>
+                      </div>
+                      {isCurrent ? (
+                        <Badge className="bg-primary animate-pulse">AKTIF</Badge>
+                      ) : !isUnlocked ? (
+                        <div className="bg-secondary/50 p-1 rounded-full"><Hourglass className="w-4 h-4 text-muted-foreground" /></div>
+                      ) : (
+                        <CheckCircle2 className="w-5 h-5 text-primary" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <Card className="glass-card border-none bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-red-900/40 p-8 text-center space-y-4">
+             <div className="bg-white/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
+                <Sword className="w-8 h-8 text-yellow-400" />
+             </div>
+             <h3 className="text-2xl font-headline font-bold">Siap Menuju Level Berikutnya?</h3>
+             <p className="text-muted-foreground max-w-md mx-auto">
+               Setiap ayat yang kamu baca, setiap doa yang kamu hafal, adalah kekuatan baru bagimu. Teruslah berjuang, Pahlawan Al-Quran!
+             </p>
+             <Button 
+               className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-8 py-6 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.4)]"
+               onClick={() => setActiveTab('tahfidz')}
+             >
+               AMBIL TUGAS BARU
+               <ArrowRight className="w-4 h-4 ml-2" />
+             </Button>
+          </Card>
         </div>
       ) : (
         <Card className="glass-card p-12 text-center"><p className="text-muted-foreground">Halaman {activeTab} sedang dikembangkan.</p></Card>
