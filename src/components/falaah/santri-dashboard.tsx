@@ -177,18 +177,21 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
   const handleTogglePrayer = (prayer: string) => {
     if (!db || !user.uid) return;
     const currentPrayers = ibadahLog?.activities?.prayers || [];
-    const newPrayers = currentPrayers.includes(prayer) 
+    const isDone = currentPrayers.includes(prayer);
+    const newPrayers = isDone 
       ? currentPrayers.filter(p => p !== prayer)
       : [...currentPrayers, prayer];
     
+    const expChange = isDone ? -EXP_VALUES.SHOLAT_WAJIB : EXP_VALUES.SHOLAT_WAJIB;
+
     const newLog: Partial<IbadahLog> = {
       uid: user.uid,
       date: dateString,
       activities: {
-        ...(ibadahLog?.activities || { quranPages: 0, hafalanText: '', others: [], dzikir: false, murottalMinutes: 0 }),
+        ...(ibadahLog?.activities || { prayers: [], quranPages: 0, hafalanText: '', others: [], dzikir: false, murottalMinutes: 0 }),
         prayers: newPrayers
       },
-      awardedExp: (ibadahLog?.awardedExp || 0) + (currentPrayers.includes(prayer) ? -EXP_VALUES.SHOLAT_WAJIB : EXP_VALUES.SHOLAT_WAJIB),
+      awardedExp: (ibadahLog?.awardedExp || 0) + expChange,
       updatedAt: new Date().toISOString()
     };
 
@@ -196,13 +199,48 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     
     const userRef = doc(db, 'users', user.uid);
     setDocumentNonBlocking(userRef, { 
-      totalExp: user.totalExp + (currentPrayers.includes(prayer) ? -EXP_VALUES.SHOLAT_WAJIB : EXP_VALUES.SHOLAT_WAJIB),
+      totalExp: user.totalExp + expChange,
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
     toast({
-      title: currentPrayers.includes(prayer) ? "Misi Dibatalkan" : "Misi Berhasil!",
+      title: isDone ? "Misi Dibatalkan" : "Misi Berhasil!",
       description: `${prayer} telah tercatat dalam log energi spiritualmu.`,
+    });
+  };
+
+  const handleToggleSpecialMission = (task: string) => {
+    if (!db || !user.uid) return;
+    const currentOthers = ibadahLog?.activities?.others || [];
+    const isDone = currentOthers.includes(task);
+    const newOthers = isDone 
+      ? currentOthers.filter(t => t !== task)
+      : [...currentOthers, task];
+    
+    const expChange = isDone ? -EXP_VALUES.DAILY_ACTIVITY : EXP_VALUES.DAILY_ACTIVITY;
+
+    const newLog: Partial<IbadahLog> = {
+      uid: user.uid,
+      date: dateString,
+      activities: {
+        ...(ibadahLog?.activities || { prayers: [], quranPages: 0, hafalanText: '', others: [], dzikir: false, murottalMinutes: 0 }),
+        others: newOthers
+      },
+      awardedExp: (ibadahLog?.awardedExp || 0) + expChange,
+      updatedAt: new Date().toISOString()
+    };
+
+    setDocumentNonBlocking(logDocRef!, newLog, { merge: true });
+    
+    const userRef = doc(db, 'users', user.uid);
+    setDocumentNonBlocking(userRef, { 
+      totalExp: user.totalExp + expChange,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    toast({
+      title: isDone ? "Misi Spesial Dibatalkan" : "Misi Spesial Selesai!",
+      description: `${task} telah menambah energi pahlawanmu.`,
     });
   };
 
@@ -721,17 +759,30 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {DAILY_IBADAH.map((task) => (
-                       <div key={task} className="flex items-center justify-between p-5 bg-black/20 rounded-2xl border border-white/5 hover:bg-black/40 transition-all cursor-pointer group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                            <Zap className="w-5 h-5 text-muted-foreground group-hover:text-accent" />
+                    {DAILY_IBADAH.map((task) => {
+                      const isDone = ibadahLog?.activities?.others?.includes(task);
+                      return (
+                        <div 
+                          key={task} 
+                          className={cn(
+                            "flex items-center justify-between p-5 rounded-2xl border transition-all cursor-pointer group",
+                            isDone ? "bg-accent/10 border-accent/30" : "bg-black/20 border-white/5 hover:bg-black/40"
+                          )}
+                          onClick={() => handleToggleSpecialMission(task)}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                              isDone ? "bg-accent text-white" : "bg-secondary text-muted-foreground group-hover:bg-accent/20"
+                            )}>
+                              {isDone ? <CheckCircle2 className="w-6 h-6" /> : <Zap className="w-5 h-5 group-hover:text-accent" />}
+                            </div>
+                            <span className={cn("font-bold", isDone ? "text-white" : "text-white/70")}>{task}</span>
                           </div>
-                          <span className="font-bold text-white/70">{task}</span>
+                          <Badge variant="outline" className={cn("border-none text-xs font-black", isDone ? "text-accent" : "text-accent/50")}>+40 EXP</Badge>
                         </div>
-                        <Badge variant="outline" className="border-none text-accent/50 text-xs font-black">+40 EXP</Badge>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CardContent>
                 </Card>
 
