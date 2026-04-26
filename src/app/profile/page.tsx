@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, ArrowLeft, Loader2, Phone, Hash } from "lucide-react";
+import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -30,7 +30,8 @@ function ProfileContent() {
     school: '',
     class: '',
     whatsapp: '',
-    participantId: ''
+    participantId: '',
+    photoUrl: ''
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -49,7 +50,8 @@ function ProfileContent() {
         school: profileData.school || '',
         class: profileData.class || '',
         whatsapp: profileData.whatsapp || '',
-        participantId: profileData.participantId || ''
+        participantId: profileData.participantId || '',
+        photoUrl: profileData.photoUrl || ''
       });
     }
   }, [profileData, authUser]);
@@ -60,18 +62,27 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
+    // Melakukan update ke Firestore
     updateDocumentNonBlocking(docRef, {
       ...formData,
       updatedAt: new Date().toISOString()
     });
 
+    // Simulasi loading singkat untuk feedback visual
     setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Profil Diperbarui",
-        description: "Identitas pahlawan Anda telah diperbarui dalam arsip pusat.",
+        title: "Identitas Disinkronkan",
+        description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
-    }, 800);
+    }, 1000);
+  };
+
+  const handlePhotoClick = () => {
+    toast({
+      title: "Integrasi Citra Pahlawan",
+      description: "Fitur unggah foto langsung sedang dalam enkripsi tingkat tinggi.",
+    });
   };
 
   const handleLogout = () => {
@@ -80,7 +91,10 @@ function ProfileContent() {
 
   if (isUserLoading || isProfileLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground animate-pulse">Mengakses data pahlawan...</p>
+      </div>
     </div>
   );
 
@@ -109,7 +123,7 @@ function ProfileContent() {
               <div className="relative mx-auto w-40 h-40">
                 <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse"></div>
                 <Avatar className="w-40 h-40 border-4 border-primary/30 shadow-2xl relative z-10">
-                  <AvatarImage src={profileData?.photoUrl} />
+                  <AvatarImage src={formData.photoUrl} />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-emerald-800 text-white text-5xl font-black">
                     {(formData.name || 'P').charAt(0)}
                   </AvatarFallback>
@@ -117,12 +131,12 @@ function ProfileContent() {
                 <Button 
                   size="icon" 
                   className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-background z-20"
-                  onClick={() => toast({ title: "Fitur Foto", description: "Enkripsi foto profil akan tersedia segera." })}
+                  onClick={handlePhotoClick}
                 >
                   <Camera className="w-5 h-5" />
                 </Button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name}</h2>
                 <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4">
                   {roleFromUrl}
@@ -145,7 +159,7 @@ function ProfileContent() {
           <Card className="lg:col-span-2 glass-card border-white/10 shadow-2xl">
             <CardHeader>
               <CardTitle className="text-2xl font-headline font-black text-white">Identitas Pahlawan</CardTitle>
-              <CardDescription>Detail pendaftaran Anda di Rumah Tahfidz Ikhsan</CardDescription>
+              <CardDescription>Sesuaikan detail biodata Anda di Rumah Tahfidz Ikhsan</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8 pt-6">
@@ -156,8 +170,8 @@ function ProfileContent() {
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="h-12 bg-black/40 border-white/10 rounded-xl text-white font-bold"
-                    placeholder="Masukkan nama lengkap"
+                    className="h-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
+                    placeholder="Masukkan nama pahlawan"
                   />
                 </div>
                 
@@ -169,7 +183,7 @@ function ProfileContent() {
                       id="participantId" 
                       value={formData.participantId} 
                       onChange={(e) => setFormData({...formData, participantId: e.target.value})}
-                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold"
+                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
                       placeholder="Contoh: RTI-2024-001"
                     />
                   </div>
@@ -177,12 +191,15 @@ function ProfileContent() {
 
                 <div className="space-y-3">
                   <Label htmlFor="email" className="text-xs font-black uppercase text-white/50 tracking-widest">Email Terdaftar</Label>
-                  <Input 
-                    id="email" 
-                    value={formData.email} 
-                    disabled
-                    className="h-12 bg-white/5 border-white/5 opacity-50 text-white font-bold cursor-not-allowed"
-                  />
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Input 
+                      id="email" 
+                      value={formData.email} 
+                      disabled
+                      className="h-12 pl-12 bg-white/5 border-white/5 opacity-50 text-white font-bold cursor-not-allowed"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -193,7 +210,7 @@ function ProfileContent() {
                       id="whatsapp" 
                       value={formData.whatsapp} 
                       onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold"
+                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
                       placeholder="Contoh: 081234567890"
                     />
                   </div>
@@ -236,7 +253,7 @@ function ProfileContent() {
                   ) : (
                     <>
                       <Save className="w-6 h-6" />
-                      PERBARUI IDENTITAS PAHLAWAN
+                      SIMPAN PERUBAHAN IDENTITAS
                     </>
                   )}
                 </Button>

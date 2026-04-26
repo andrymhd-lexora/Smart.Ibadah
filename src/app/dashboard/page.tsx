@@ -70,9 +70,10 @@ function DashboardContent() {
 
   if (!authUser) return null;
 
+  // Nama diprioritaskan dari profileData yang ada di Firestore
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
-    name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'User Falaah'),
+    name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'Pahlawan Falaah'),
     email: authUser.email || '',
     role: roleFromUrl || 'santri',
     totalExp: 0,
