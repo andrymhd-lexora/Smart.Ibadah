@@ -38,7 +38,7 @@ function DashboardContent() {
   // Inisialisasi User Baru jika belum ada di Firestore
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
-      const newUser: UserProfile = {
+      const newUser: Partial<UserProfile> = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
@@ -52,6 +52,7 @@ function DashboardContent() {
       };
       
       const docRef = doc(db, 'users', authUser.uid);
+      // Gunakan setDocumentNonBlocking dengan merge untuk inisialisasi yang aman
       setDocumentNonBlocking(docRef, newUser, { merge: true });
     }
   }, [authUser, isProfileLoading, profileData, db, roleFromUrl, nameFromUrl]);
@@ -71,7 +72,7 @@ function DashboardContent() {
 
   if (!authUser) return null;
 
-  // Nama diprioritaskan dari profileData yang ada di Firestore untuk sinkronisasi real-time
+  // Nama diprioritaskan dari profileData agar sinkron dengan Firestore
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
     name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'Pahlawan Falaah'),
@@ -79,7 +80,7 @@ function DashboardContent() {
     role: roleFromUrl || 'santri',
     totalExp: 0,
     streak: 0
-  };
+  } as UserProfile;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

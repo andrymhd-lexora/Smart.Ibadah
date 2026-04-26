@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 
 function ProfileContent() {
@@ -62,27 +62,27 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Melakukan update ke Firestore
-    updateDocumentNonBlocking(docRef, {
+    // Gunakan setDocumentNonBlocking dengan merge: true agar lebih reliabel (membuat jika belum ada)
+    setDocumentNonBlocking(docRef, {
       ...formData,
+      uid: authUser.uid,
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
 
-    // Simulasi loading singkat untuk feedback visual
+    // Berikan feedback visual segera
     setTimeout(() => {
       setIsSaving(false);
       toast({
         title: "Identitas Disinkronkan",
         description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
-    }, 800);
+    }, 500);
   };
 
   const handlePhotoUpload = () => {
     if (!authUser || !db) return;
     
-    // Simulasi unggah foto dengan placeholder epik
-    const mockPhotoUrl = `https://picsum.photos/seed/${Math.random()}/400/400`;
+    const mockPhotoUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 1000)}/400/400`;
     
     toast({
       title: "Citra Pahlawan Diperbarui",
@@ -92,17 +92,17 @@ function ProfileContent() {
     setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
     
     const docRef = doc(db, 'users', authUser.uid);
-    updateDocumentNonBlocking(docRef, {
+    setDocumentNonBlocking(docRef, {
       photoUrl: mockPhotoUrl,
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
   };
 
   const handleLogout = () => {
     router.push('/');
   };
 
-  if (isUserLoading || isProfileLoading) return (
+  if (isUserLoading || (authUser && isProfileLoading)) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -134,7 +134,6 @@ function ProfileContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Avatar Card */}
           <Card className="glass-card border-none bg-card/40 shadow-2xl h-fit overflow-hidden">
             <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30"></div>
             <CardContent className="p-8 text-center space-y-6 -mt-16">
@@ -173,7 +172,6 @@ function ProfileContent() {
             </CardContent>
           </Card>
 
-          {/* Form Card */}
           <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl">
             <CardHeader className="border-b border-white/5 pb-8">
               <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Identitas Pahlawan</CardTitle>

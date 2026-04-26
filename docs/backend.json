@@ -22,10 +22,7 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user within the application, determining access and functionality.",
-          "items": {
-            "type": "string"
-          }
+          "description": "The role of the user within the application, determining access and functionality."
         },
         "whatsapp": {
           "type": "string",
@@ -35,24 +32,33 @@
           "type": "string",
           "description": "The unique participant ID assigned to the student."
         },
+        "photoUrl": {
+          "type": "string",
+          "description": "URL to the user's profile photo."
+        },
+        "school": {
+          "type": "string",
+          "description": "The school or institution the user belongs to."
+        },
+        "class": {
+          "type": "string",
+          "description": "The class or squad the user belongs to."
+        },
         "rank": {
           "type": "string",
-          "description": "The current gamified rank of the user, based on their total experience points.",
-          "items": {
-            "type": "string"
-          }
+          "description": "The current gamified rank of the user."
         },
         "totalExp": {
           "type": "number",
-          "description": "The cumulative experience points (EXP) earned by the user across all activities."
+          "description": "The cumulative experience points (EXP) earned by the user."
         },
         "streak": {
           "type": "number",
-          "description": "The number of consecutive days the user has completed their Wajib (obligatory) prayers."
+          "description": "The number of consecutive days the user has been active."
         },
         "linkedStudentIds": {
           "type": "array",
-          "description": "An array of User IDs of 'Santri' (students) that this 'Wali' (parent) user is linked to for monitoring purposes.",
+          "description": "An array of User IDs of 'Santri' (students) that this 'Wali' (parent) user is linked to.",
           "items": {
             "type": "string"
           }
@@ -72,12 +78,7 @@
         "id",
         "name",
         "email",
-        "role",
-        "rank",
-        "totalExp",
-        "streak",
-        "createdAt",
-        "updatedAt"
+        "role"
       ]
     },
     "IbadahLog": {
