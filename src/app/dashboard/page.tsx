@@ -2,7 +2,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useMemo } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
@@ -38,7 +38,7 @@ function DashboardContent() {
   // Inisialisasi User Baru jika belum ada di Firestore
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
-      const newUser: Partial<UserProfile> = {
+      const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
@@ -52,7 +52,6 @@ function DashboardContent() {
       };
       
       const docRef = doc(db, 'users', authUser.uid);
-      // Gunakan setDocumentNonBlocking dengan merge untuk inisialisasi yang aman
       setDocumentNonBlocking(docRef, newUser, { merge: true });
     }
   }, [authUser, isProfileLoading, profileData, db, roleFromUrl, nameFromUrl]);
@@ -73,13 +72,18 @@ function DashboardContent() {
   if (!authUser) return null;
 
   // Nama diprioritaskan dari profileData agar sinkron dengan Firestore
-  const finalUser: UserProfile = profileData || {
+  const finalUser: UserProfile = {
     uid: authUser.uid,
-    name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'Pahlawan Falaah'),
-    email: authUser.email || '',
-    role: roleFromUrl || 'santri',
-    totalExp: 0,
-    streak: 0
+    name: profileData?.name || (nameFromUrl ? decodeURIComponent(nameFromUrl!) : (authUser.displayName || 'Pahlawan Falaah')),
+    email: profileData?.email || authUser.email || '',
+    role: profileData?.role || roleFromUrl || 'santri',
+    totalExp: profileData?.totalExp || 0,
+    streak: profileData?.streak || 0,
+    whatsapp: profileData?.whatsapp || '',
+    participantId: profileData?.participantId || '',
+    photoUrl: profileData?.photoUrl || '',
+    school: profileData?.school || '',
+    class: profileData?.class || '',
   } as UserProfile;
 
   return (
@@ -98,7 +102,7 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     }>

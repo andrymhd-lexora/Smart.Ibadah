@@ -62,33 +62,26 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Gunakan setDocumentNonBlocking dengan merge: true agar lebih reliabel (membuat jika belum ada)
+    // Gunakan setDocumentNonBlocking dengan merge: true agar data EXP dll tidak hilang
     setDocumentNonBlocking(docRef, {
       ...formData,
       uid: authUser.uid,
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
-    // Berikan feedback visual segera
+    // Simulasi delay untuk feedback UX
     setTimeout(() => {
       setIsSaving(false);
       toast({
         title: "Identitas Disinkronkan",
         description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
-    }, 500);
+    }, 800);
   };
 
   const handlePhotoUpload = () => {
     if (!authUser || !db) return;
-    
     const mockPhotoUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 1000)}/400/400`;
-    
-    toast({
-      title: "Citra Pahlawan Diperbarui",
-      description: "Menghubungkan citra baru ke profil spiritual Anda...",
-    });
-
     setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
     
     const docRef = doc(db, 'users', authUser.uid);
@@ -96,6 +89,11 @@ function ProfileContent() {
       photoUrl: mockPhotoUrl,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+
+    toast({
+      title: "Citra Diperbarui",
+      description: "Menghubungkan citra baru ke profil spiritual Anda...",
+    });
   };
 
   const handleLogout = () => {
@@ -125,7 +123,7 @@ function ProfileContent() {
             onClick={() => router.push(`/dashboard?role=${roleFromUrl}`)}
           >
             <ArrowLeft className="w-4 h-4" />
-            Kembali ke Markas Utama
+            Kembali ke Markas
           </Button>
           <div className="flex items-center gap-2 text-accent animate-pulse">
             <Sparkles className="w-5 h-5" />
@@ -154,7 +152,7 @@ function ProfileContent() {
                 </Button>
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-headline font-black text-white">{formData.name}</h2>
+                <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Nama Belum Diatur'}</h2>
                 <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4 py-1">
                   {roleFromUrl}
                 </Badge>
@@ -200,7 +198,7 @@ function ProfileContent() {
                       value={formData.participantId} 
                       onChange={(e) => setFormData({...formData, participantId: e.target.value})}
                       className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
-                      placeholder="Contoh: RTI-2024-001"
+                      placeholder="Contoh: RTI-1234"
                     />
                   </div>
                 </div>
@@ -233,7 +231,7 @@ function ProfileContent() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="school" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Asal Sekolah / Markas</Label>
+                  <Label htmlFor="school" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Asal Sekolah</Label>
                   <Input 
                     id="school" 
                     placeholder="Contoh: SMP IT Ikhsan"
@@ -247,7 +245,7 @@ function ProfileContent() {
                   <Label htmlFor="class" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Kelas / Skuad</Label>
                   <Input 
                     id="class" 
-                    placeholder="Contoh: 9A atau Pengajar"
+                    placeholder="Contoh: 9A"
                     value={formData.class} 
                     onChange={(e) => setFormData({...formData, class: e.target.value})}
                     className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold text-lg"
@@ -257,7 +255,7 @@ function ProfileContent() {
 
               <div className="pt-10 border-t border-white/5">
                 <Button 
-                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_45px_rgba(16,185,129,0.5)] transition-all text-xl uppercase tracking-tighter"
+                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all text-xl uppercase"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -269,7 +267,7 @@ function ProfileContent() {
                   ) : (
                     <>
                       <Save className="w-8 h-8" />
-                      SIMPAN PERUBAHAN IDENTITAS
+                      SIMPAN IDENTITAS
                     </>
                   )}
                 </Button>

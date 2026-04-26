@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserRole } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { 
@@ -10,7 +10,8 @@ import {
   Users, 
   ArrowRight,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,30 +19,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 export default function LandingPage() {
   const router = useRouter();
   const auth = useAuth();
+  const { user: authUser, isUserLoading } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Auto-redirect jika sudah login
+  useEffect(() => {
+    if (!isUserLoading && authUser) {
+      // Jika sudah login, kita tetap butuh role. Default ke santri jika tidak ada context
+      router.push('/dashboard?role=santri');
+    }
+  }, [authUser, isUserLoading, router]);
+
   const handleLogin = (role: UserRole) => {
-    // Melakukan login secara anonim untuk keperluan prototype agar memiliki auth context di Firestore
+    if (!email && role === 'santri') {
+      toast({
+        variant: "destructive",
+        title: "Nama Diperlukan",
+        description: "Masukkan nama atau email pahlawan Anda.",
+      });
+      return;
+    }
+
     initiateAnonymousSignIn(auth);
     
     toast({
       title: "Proses Masuk",
-      description: `Menyiapkan dashboard ${role}...`,
+      description: `Menyiapkan markas pahlawan...`,
     });
     
-    // Ambil bagian depan email sebagai nama default jika tersedia
-    const displayName = email ? email.split('@')[0] : "";
-    
-    // Alihkan ke dashboard dengan role dan nama yang dipilih
-    router.push(`/dashboard?role=${role}${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`);
+    const displayName = email ? email.split('@')[0] : "Pahlawan";
+    router.push(`/dashboard?role=${role}&name=${encodeURIComponent(displayName)}`);
   };
+
+  if (isUserLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+    </div>
+  );
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -85,8 +106,8 @@ export default function LandingPage() {
         <div className="w-full max-w-md mx-auto">
           <Card className="glass-card shadow-2xl border-white/10">
             <CardHeader>
-              <CardTitle className="text-2xl font-headline">Mulai Sekarang</CardTitle>
-              <CardDescription>Pilih peran Anda untuk melanjutkan</CardDescription>
+              <CardTitle className="text-2xl font-headline">Aktivasi Pahlawan</CardTitle>
+              <CardDescription>Pilih identitas Anda untuk melanjutkan</CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="santri" className="w-full">
@@ -98,15 +119,15 @@ export default function LandingPage() {
 
                 <TabsContent value="santri" className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email-santri">Alamat Email / Nama</Label>
-                    <Input id="email-santri" placeholder="faiz atau faiz@example.com" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
+                    <Label htmlFor="email-santri">Nama Pahlawan / Email</Label>
+                    <Input id="email-santri" placeholder="Contoh: Faiz" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password-santri">Kata Sandi</Label>
+                    <Label htmlFor="password-santri">Kata Sandi (Opsional)</Label>
                     <Input id="password-santri" type="password" placeholder="••••••••" className="bg-secondary/30" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
                   <Button className="w-full bg-primary text-primary-foreground font-bold py-6 mt-4" onClick={() => handleLogin('santri')}>
-                    Masuk sebagai Santri
+                    Masuk ke Markas
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </TabsContent>
@@ -115,7 +136,7 @@ export default function LandingPage() {
                   <div className="space-y-2 text-center py-4">
                     <ShieldCheck className="w-12 h-12 text-accent mx-auto mb-4" />
                     <h3 className="text-lg font-bold">Akses Pengajar</h3>
-                    <p className="text-sm text-muted-foreground">Masukkan kredensial Anda untuk mengelola kelas di Rumah Tahfidz Ikhsan.</p>
+                    <p className="text-sm text-muted-foreground">Gunakan otoritas Anda untuk membimbing para pahlawan muda.</p>
                   </div>
                   <Button className="w-full bg-accent text-accent-foreground font-bold py-6" onClick={() => handleLogin('ustadz')}>
                     Masuk sebagai Ustadz
@@ -127,28 +148,16 @@ export default function LandingPage() {
                   <div className="space-y-2 text-center py-4">
                     <Users className="w-12 h-12 text-primary mx-auto mb-4" />
                     <h3 className="text-lg font-bold">Pemantauan Wali</h3>
-                    <p className="text-sm text-muted-foreground">Pantau perkembangan spiritual anak Anda secara waktu nyata.</p>
+                    <p className="text-sm text-muted-foreground">Pantau perkembangan spiritual pahlawan kecil Anda.</p>
                   </div>
                   <Button className="w-full bg-secondary text-foreground font-bold py-6" onClick={() => handleLogin('wali')}>
-                    Masuk sebagai Wali / Orang Tua
+                    Masuk sebagai Wali
                   </Button>
                 </TabsContent>
               </Tabs>
-
-              <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                <p className="text-xs text-muted-foreground">
-                  Dengan melanjutkan, Anda menyetujui panduan pertumbuhan spiritual kami.
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      <div className="absolute bottom-8 text-center w-full">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-medium opacity-50">
-          Dikembangkan untuk Rumah Tahfidz Ikhsan
-        </p>
       </div>
     </main>
   );
