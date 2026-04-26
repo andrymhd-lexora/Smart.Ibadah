@@ -75,6 +75,15 @@ interface SantriDashboardProps {
   user: UserProfile;
 }
 
+type SetoranItem = {
+  name: string;
+  type: 'surah' | 'doa' | 'hadits';
+  arabic?: string;
+  latin?: string;
+  translation?: string;
+  source?: string;
+};
+
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
 
 const QORIS = [
@@ -100,7 +109,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
   const dateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Setoran States
-  const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<{name: string, type: 'surah' | 'doa'} | null>(null);
+  const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<SetoranItem | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -233,9 +242,9 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
       santriName: user.name,
       ibadahLogId: dateString,
       submissionDate: new Date().toISOString(),
-      hafalanContent: `Misi Berhasil: ${selectedItemForSetoran.name}`,
+      hafalanContent: `Misi Berhasil: ${selectedItemForSetoran.name} (${selectedItemForSetoran.type.toUpperCase()})`,
       status: 'PENDING_REVIEW',
-      expAwarded: 100,
+      expAwarded: selectedItemForSetoran.type === 'surah' ? 200 : 100,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       assignedUstadzId: user.assignedUstadzId || 'MOCK_USTADZ_ID'
@@ -420,7 +429,12 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                         "w-full h-12 font-black uppercase tracking-wider rounded-xl",
                         sub ? "bg-primary/20 text-primary border border-primary/30" : "bg-primary text-white"
                       )}
-                      onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}
+                      onClick={() => setSelectedItemForSetoran({ 
+                        name: surah.name, 
+                        type: 'surah',
+                        arabic: surah.arabicName,
+                        translation: `Surat ke-${surah.number} dari Al-Quran.`
+                      })}
                     >
                       {sub ? (
                         <><CheckCircle2 className="w-4 h-4 mr-2" /> TERKIRIM</>
@@ -481,7 +495,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                  </div>
                </div>
 
-               <div className="w-full max-w-sm bg-black/60 p-8 rounded-[2.5rem] border-2 border-white/5 space-y-8 backdrop-blur-xl">
+               <div className="w-full max-sm:w-full max-w-sm bg-black/60 p-8 rounded-[2.5rem] border-2 border-white/5 space-y-8 backdrop-blur-xl">
                  <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">Live Stream</span>
                     <div className="flex gap-1">
@@ -583,7 +597,18 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                     <p className="text-2xl font-serif text-right text-white leading-relaxed mb-4">{hadits.arabic}</p>
                     <p className="text-sm text-muted-foreground italic leading-relaxed">"{hadits.translation}"</p>
                    </div>
-                   <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest text-primary/60 hover:text-primary">Gunakan Sebagai Status</Button>
+                   <Button 
+                    className="w-full bg-primary/20 text-primary font-black uppercase tracking-widest text-xs h-10 rounded-xl"
+                    onClick={() => setSelectedItemForSetoran({
+                      name: hadits.title,
+                      type: 'hadits',
+                      arabic: hadits.arabic,
+                      translation: hadits.translation,
+                      source: hadits.source
+                    })}
+                   >
+                    HAFALKAN MISI
+                   </Button>
                  </CardContent>
                </Card>
              ))}
@@ -614,7 +639,18 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                      <p className="text-[10px] text-white/40 italic font-mono">{doa.latin}</p>
                      <p className="text-xs text-muted-foreground leading-relaxed">{doa.translation}</p>
                    </div>
-                   <Button className="w-full bg-accent text-white font-black uppercase tracking-widest text-xs h-10 rounded-xl">Hafalkan Misi</Button>
+                   <Button 
+                    className="w-full bg-accent text-white font-black uppercase tracking-widest text-xs h-10 rounded-xl"
+                    onClick={() => setSelectedItemForSetoran({
+                      name: doa.title,
+                      type: 'doa',
+                      arabic: doa.arabic,
+                      latin: doa.latin,
+                      translation: doa.translation
+                    })}
+                   >
+                    HAFALKAN MISI
+                   </Button>
                  </CardContent>
                </Card>
              ))}
@@ -637,7 +673,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                     </div>
                   </div>
                </div>
-               <div className="w-full max-w-xs p-6 bg-black/40 rounded-3xl border border-white/5 text-center space-y-4">
+               <div className="w-full max-sm:w-full max-w-xs p-6 bg-black/40 rounded-3xl border border-white/5 text-center space-y-4">
                   <div className="text-xs font-black uppercase tracking-widest text-white/50">Waktu Operasi</div>
                   <div className="text-3xl font-black text-white">{format(new Date(), 'HH:mm')}</div>
                   <Badge className="bg-emerald-500/20 text-emerald-500 border-none px-4 py-1 uppercase font-black">Status: Aktif</Badge>
@@ -776,42 +812,86 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {/* Recording Dialog */}
+      {/* Recording & Mission Dialog */}
       <Dialog open={!!selectedItemForSetoran} onOpenChange={() => !isRecording && setSelectedItemForSetoran(null)}>
-        <DialogContent className="glass-card sm:max-w-md border-primary/20 bg-[#0f172a] rounded-[2rem] p-8">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl font-black text-white uppercase tracking-tighter">
-              <Bolt className="w-6 h-6 text-primary" />
-              Transmisi Misi: {selectedItemForSetoran?.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-10 space-y-8">
-            <div className={cn(
-              "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500",
-              isRecording ? "bg-red-500 hero-glow scale-110 shadow-[0_0_40px_rgba(239,68,68,0.5)]" : "bg-primary/20 border-2 border-primary/30"
-            )}>
-              {isRecording ? <Square className="w-10 h-10 text-white fill-current animate-pulse" /> : <Mic className="w-12 h-12 text-primary" />}
+        <DialogContent className="glass-card sm:max-w-2xl border-primary/20 bg-[#0f172a] rounded-[2rem] p-0 overflow-hidden">
+          <ScrollArea className="max-h-[85vh]">
+            <div className="p-8 space-y-8">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3 text-2xl font-black text-white uppercase tracking-tighter">
+                  <Bolt className="w-6 h-6 text-primary" />
+                  Misi Hafalan: {selectedItemForSetoran?.name}
+                </DialogTitle>
+              </DialogHeader>
+
+              {/* Teks Bacaan Lengkap */}
+              <div className="p-6 rounded-3xl bg-black/40 border border-white/10 space-y-6">
+                {selectedItemForSetoran?.arabic && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">Teks Arab</p>
+                    <p className="text-4xl md:text-5xl font-serif text-right text-white leading-relaxed">{selectedItemForSetoran.arabic}</p>
+                  </div>
+                )}
+                {selectedItemForSetoran?.latin && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Teks Latin</p>
+                    <p className="text-sm italic text-white/70 font-mono leading-relaxed">{selectedItemForSetoran.latin}</p>
+                  </div>
+                )}
+                {selectedItemForSetoran?.translation && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Terjemahan</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedItemForSetoran.translation}</p>
+                  </div>
+                )}
+                {selectedItemForSetoran?.source && (
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[10px] font-black">{selectedItemForSetoran.source}</Badge>
+                )}
+              </div>
+
+              {/* Recording Controls */}
+              <div className="flex flex-col items-center justify-center py-6 space-y-8 border-t border-white/5 pt-8">
+                <div className={cn(
+                  "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 cursor-pointer",
+                  isRecording ? "bg-red-500 hero-glow scale-110 shadow-[0_0_40px_rgba(239,68,68,0.5)]" : "bg-primary/20 border-2 border-primary/30 hover:bg-primary/30"
+                )} onClick={isRecording ? stopRecording : startRecording}>
+                  {isRecording ? <Square className="w-10 h-10 text-white fill-current animate-pulse" /> : <Mic className="w-12 h-12 text-primary" />}
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-5xl font-mono font-black text-white tracking-widest bg-black/40 px-6 py-2 rounded-xl border border-white/5">
+                    {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                  </div>
+                  <p className="text-xs font-black uppercase text-white/30 tracking-widest">
+                    {isRecording ? "Sedang Merekam..." : "Ketuk Mikrofon untuk Memulai"}
+                  </p>
+                </div>
+                {audioUrl && !isRecording && (
+                  <div className="w-full space-y-2">
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest text-center">Hasil Rekaman</p>
+                    <audio src={audioUrl} controls className="w-full opacity-80" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="text-5xl font-mono font-black text-white tracking-widest bg-black/40 px-6 py-2 rounded-xl border border-white/5">
-              {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-            </div>
-            {audioUrl && !isRecording && <audio src={audioUrl} controls className="w-full opacity-80" />}
+          </ScrollArea>
+          
+          <div className="p-8 border-t border-white/5 bg-black/20">
+            <DialogFooter className="flex flex-col sm:flex-row gap-4">
+              {!audioUrl ? (
+                <Button 
+                  className={cn("flex-1 h-16 font-black uppercase tracking-widest text-lg rounded-2xl", isRecording ? "bg-red-600 hover:bg-red-700" : "bg-primary")} 
+                  onClick={isRecording ? stopRecording : startRecording}
+                >
+                  {isRecording ? "HENTIKAN" : "MULAI REKAM"}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" className="flex-1 h-16 font-black rounded-2xl border-white/10 hover:bg-white/5" onClick={() => setAudioUrl(null)}>ULANGI REKAMAN</Button>
+                  <Button className="flex-1 h-16 bg-primary font-black rounded-2xl shadow-lg shadow-primary/20" onClick={sendRecording}>KIRIM SETORAN</Button>
+                </>
+              )}
+            </DialogFooter>
           </div>
-          <DialogFooter className="flex-row gap-4">
-            {!audioUrl ? (
-              <Button 
-                className={cn("flex-1 h-16 font-black uppercase tracking-widest text-lg rounded-2xl", isRecording ? "bg-red-600 hover:bg-red-700" : "bg-primary")} 
-                onClick={isRecording ? stopRecording : startRecording}
-              >
-                {isRecording ? "HENTIKAN" : "MULAI REKAM"}
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" className="flex-1 h-16 font-black rounded-2xl" onClick={() => setAudioUrl(null)}>ULANGI</Button>
-                <Button className="flex-1 h-16 bg-primary font-black rounded-2xl" onClick={sendRecording}>KIRIM MISI</Button>
-              </>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
