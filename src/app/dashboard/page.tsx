@@ -21,6 +21,7 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
+  // Data dari URL (hanya untuk inisialisasi pertama kali)
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
 
@@ -39,12 +40,12 @@ function DashboardContent() {
 
   // Inisialisasi User Baru jika belum ada di Firestore
   useEffect(() => {
-    if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
+    if (authUser && !isProfileLoading && !profileData && db) {
       const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
-        role: roleFromUrl,
+        role: roleFromUrl || 'santri',
         totalExp: 0,
         streak: 0,
         whatsapp: '',
@@ -71,7 +72,7 @@ function DashboardContent() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Mempersiapkan Markas Pahlawan...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Mengakses Markas Pahlawan...</p>
       </div>
     </div>
   );

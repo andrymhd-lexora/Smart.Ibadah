@@ -64,7 +64,6 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Simpan ke Firestore dengan merge: true
     const updatedData = {
       ...formData,
       uid: authUser.uid,
@@ -73,7 +72,6 @@ function ProfileContent() {
 
     setDocumentNonBlocking(docRef, updatedData, { merge: true });
 
-    // Feedback instan ke user
     setTimeout(() => {
       setIsSaving(false);
       toast({
@@ -129,7 +127,7 @@ function ProfileContent() {
           <Button 
             variant="ghost" 
             className="gap-2 text-muted-foreground hover:text-white transition-colors"
-            onClick={() => router.push(`/dashboard?role=${roleFromUrl}`)}
+            onClick={() => router.push(`/dashboard?role=${profileData?.role || roleFromUrl}`)}
           >
             <ArrowLeft className="w-4 h-4" />
             Kembali ke Markas

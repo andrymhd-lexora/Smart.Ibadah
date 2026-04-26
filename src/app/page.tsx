@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Flame,
   CheckCircle2,
-  Loader2
+  Loader2,
+  UserPlus,
+  LogIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,42 +22,65 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useAuth, useUser } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { initiateAnonymousSignIn, initiateEmailSignIn, initiateEmailSignUp } from "@/firebase/non-blocking-login";
 
 export default function LandingPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user: authUser, isUserLoading } = useUser();
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<UserRole>("santri");
 
-  // Auto-redirect jika sudah login
   useEffect(() => {
     if (!isUserLoading && authUser) {
-      // Jika sudah login, kita tetap butuh role. Default ke santri jika tidak ada context
-      router.push('/dashboard?role=santri');
+      router.push('/dashboard');
     }
   }, [authUser, isUserLoading, router]);
 
-  const handleLogin = (role: UserRole) => {
-    if (!email && role === 'santri') {
+  const handleAction = () => {
+    if (!email || !password) {
       toast({
         variant: "destructive",
-        title: "Nama Diperlukan",
-        description: "Masukkan nama atau email pahlawan Anda.",
+        title: "Data Tidak Lengkap",
+        description: "Email dan kata sandi wajib diisi.",
       });
       return;
     }
 
+    if (mode === "register") {
+      if (!name) {
+        toast({
+          variant: "destructive",
+          title: "Nama Diperlukan",
+          description: "Masukkan nama pahlawan Anda untuk pendaftaran.",
+        });
+        return;
+      }
+      initiateEmailSignUp(auth, email, password);
+      toast({
+        title: "Pendaftaran Pahlawan",
+        description: "Mendaftarkan identitas Anda ke database pusat...",
+      });
+    } else {
+      initiateEmailSignIn(auth, email, password);
+      toast({
+        title: "Proses Masuk",
+        description: "Memverifikasi otoritas pahlawan Anda...",
+      });
+    }
+
+    // Redirect akan ditangani oleh useEffect authStateChanged di dashboard
+    // Kita kirim role dan name lewat URL sebagai fallback inisialisasi
+    const query = `?role=${role}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
+    router.push(`/dashboard${query}`);
+  };
+
+  const handleAnonymous = (selectedRole: UserRole) => {
     initiateAnonymousSignIn(auth);
-    
-    toast({
-      title: "Proses Masuk",
-      description: `Menyiapkan markas pahlawan...`,
-    });
-    
-    const displayName = email ? email.split('@')[0] : "Pahlawan";
-    router.push(`/dashboard?role=${role}&name=${encodeURIComponent(displayName)}`);
+    router.push(`/dashboard?role=${selectedRole}`);
   };
 
   if (isUserLoading) return (
@@ -74,31 +99,27 @@ export default function LandingPage() {
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest">
               <Flame className="w-3 h-3 fill-current" />
-              Memberdayakan Perjalanan Ibadah
+              Portal Peradaban Al-Quran
             </div>
             <h1 className="text-5xl md:text-7xl font-headline font-bold leading-[0.9] tracking-tighter">
               Falaah <span className="text-primary italic text-3xl md:text-5xl">v.1.0</span>
               <br />
-              Pelacak Ibadah <br />
-              <span className="text-accent">Pintar.</span>
+              Markas <br />
+              <span className="text-accent">Pahlawan.</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
-              Gamifikasi progres spiritualmu. Pantau sholat, bacaan Quran, dan hafalan dengan bantuan motivasi berbasis AI.
+              Tempat di mana setiap ayat yang dihafal menjadi kekuatan, dan setiap ibadah menjadi langkah menuju kejayaan.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary" />
-              Sistem EXP
+              Sistem Power Level
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary" />
-              Progres Peringkat
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              Verifikasi Guru
+              Verifikasi Ustadz Epik
             </div>
           </div>
         </div>
@@ -106,54 +127,60 @@ export default function LandingPage() {
         <div className="w-full max-w-md mx-auto">
           <Card className="glass-card shadow-2xl border-white/10">
             <CardHeader>
-              <CardTitle className="text-2xl font-headline">Aktivasi Pahlawan</CardTitle>
-              <CardDescription>Pilih identitas Anda untuk melanjutkan</CardDescription>
+              <CardTitle className="text-2xl font-headline uppercase tracking-tighter">
+                {mode === "login" ? "Otorisasi Pahlawan" : "Inisialisasi Pahlawan"}
+              </CardTitle>
+              <CardDescription>
+                {mode === "login" ? "Masuk ke markas Anda" : "Daftarkan identitas baru Anda"}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="santri" className="w-full">
-                <TabsList className="grid grid-cols-3 w-full mb-8 bg-secondary/50">
+            <CardContent className="space-y-6">
+              <Tabs defaultValue="santri" className="w-full" onValueChange={(v) => setRole(v as UserRole)}>
+                <TabsList className="grid grid-cols-3 w-full mb-6 bg-secondary/50">
                   <TabsTrigger value="santri">Santri</TabsTrigger>
                   <TabsTrigger value="ustadz">Ustadz</TabsTrigger>
                   <TabsTrigger value="wali">Wali</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="santri" className="space-y-4">
+                <div className="space-y-4">
+                  {mode === "register" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nama Lengkap Pahlawan</Label>
+                      <Input id="name" placeholder="Contoh: Ahmad Faiz" className="bg-secondary/30" value={name} onChange={e => setName(e.target.value)} />
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    <Label htmlFor="email-santri">Nama Pahlawan / Email</Label>
-                    <Input id="email-santri" placeholder="Contoh: Faiz" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
+                    <Label htmlFor="email">Email Terdaftar</Label>
+                    <Input id="email" type="email" placeholder="pahlawan@falaah.id" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password-santri">Kata Sandi (Opsional)</Label>
-                    <Input id="password-santri" type="password" placeholder="••••••••" className="bg-secondary/30" value={password} onChange={e => setPassword(e.target.value)} />
+                    <Label htmlFor="password">Kata Sandi</Label>
+                    <Input id="password" type="password" placeholder="••••••••" className="bg-secondary/30" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
-                  <Button className="w-full bg-primary text-primary-foreground font-bold py-6 mt-4" onClick={() => handleLogin('santri')}>
-                    Masuk ke Markas
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                  
+                  <Button className="w-full bg-primary text-white font-black h-14 mt-4 uppercase tracking-widest text-lg rounded-2xl" onClick={handleAction}>
+                    {mode === "login" ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />}
+                    {mode === "login" ? "MASUK MARKAS" : "DAFTAR SEKARANG"}
                   </Button>
-                </TabsContent>
 
-                <TabsContent value="ustadz" className="space-y-4">
-                  <div className="space-y-2 text-center py-4">
-                    <ShieldCheck className="w-12 h-12 text-accent mx-auto mb-4" />
-                    <h3 className="text-lg font-bold">Akses Pengajar</h3>
-                    <p className="text-sm text-muted-foreground">Gunakan otoritas Anda untuk membimbing para pahlawan muda.</p>
+                  <div className="relative py-4">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
+                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#12141c] px-2 text-muted-foreground">Atau Akses Cepat</span></div>
                   </div>
-                  <Button className="w-full bg-accent text-accent-foreground font-bold py-6" onClick={() => handleLogin('ustadz')}>
-                    Masuk sebagai Ustadz
-                    <ShieldCheck className="w-4 h-4 ml-2" />
-                  </Button>
-                </TabsContent>
 
-                <TabsContent value="wali" className="space-y-4">
-                  <div className="space-y-2 text-center py-4">
-                    <Users className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-lg font-bold">Pemantauan Wali</h3>
-                    <p className="text-sm text-muted-foreground">Pantau perkembangan spiritual pahlawan kecil Anda.</p>
-                  </div>
-                  <Button className="w-full bg-secondary text-foreground font-bold py-6" onClick={() => handleLogin('wali')}>
-                    Masuk sebagai Wali
+                  <Button variant="ghost" className="w-full text-white/50 hover:text-white" onClick={() => handleAnonymous(role)}>
+                    Masuk Sebagai Tamu (Tanpa Daftar)
                   </Button>
-                </TabsContent>
+
+                  <div className="text-center">
+                    <button 
+                      className="text-primary font-bold hover:underline text-sm"
+                      onClick={() => setMode(mode === "login" ? "register" : "login")}
+                    >
+                      {mode === "login" ? "Belum punya akun? Daftar di sini" : "Sudah punya akun? Masuk di sini"}
+                    </button>
+                  </div>
+                </div>
               </Tabs>
             </CardContent>
           </Card>
