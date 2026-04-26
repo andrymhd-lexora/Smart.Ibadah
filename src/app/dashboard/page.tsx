@@ -1,87 +1,61 @@
+
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import { UserRole, UserProfile, IbadahLog } from "@/lib/types";
+import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
 import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
 import { Loader2 } from "lucide-react";
-
-const MOCK_USER: UserProfile = {
-  uid: 'current-user-1',
-  name: 'Ahmad Faiz',
-  email: 'faiz@example.com',
-  role: 'santri',
-  totalExp: 32550,
-  streak: 15
-};
-
-const MOCK_USTADZ: UserProfile = {
-  uid: 'current-user-2',
-  name: 'Ustadz Mansyur',
-  email: 'mansyur@example.com',
-  role: 'ustadz',
-  totalExp: 0,
-  streak: 0
-};
-
-const MOCK_WALI: UserProfile = {
-  uid: 'current-user-3',
-  name: 'Pak Budi',
-  email: 'budi@example.com',
-  role: 'wali',
-  totalExp: 0,
-  streak: 0
-};
-
-const MOCK_LOG: IbadahLog = {
-  uid: 'current-user-1',
-  date: new Date().toISOString().split('T')[0],
-  activities: {
-    prayers: ['Subuh', 'Dzuhur'],
-    quranPages: 2,
-    hafalanText: "Inna a'tainakal kauthar. Fasalli lirabbika wanhar. Inna syani'aka huwal abtar.",
-    others: ['Sedekah'],
-    dzikir: true,
-    murottalMinutes: 15,
-  },
-  isVerified: false,
-  isRevised: false,
-  awardedExp: 450,
-};
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 function DashboardContent() {
+  const { user: authUser, isUserLoading } = useUser();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const db = useFirestore();
+  
   const role = (searchParams.get('role') as UserRole) || 'santri';
-  const [user, setUser] = useState<UserProfile | null>(null);
 
-  useEffect(() => {
-    if (role === 'santri') setUser(MOCK_USER);
-    else if (role === 'ustadz') setUser(MOCK_USTADZ);
-    else if (role === 'wali') setUser(MOCK_WALI);
-  }, [role]);
+  // Fetch real profile from Firestore
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !authUser) return null;
+    return doc(db, 'users', authUser.uid);
+  }, [db, authUser]);
+
+  const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   const handleLogout = () => {
     router.push('/');
   };
 
-  if (!user) return (
+  if (isUserLoading || isProfileLoading) return (
     <div className="min-h-screen flex items-center justify-center">
       <Loader2 className="w-12 h-12 animate-spin text-primary" />
     </div>
   );
 
+  // Fallback to local profile if document doesn't exist yet for prototyping
+  const finalUser: UserProfile = profileData || {
+    uid: authUser?.uid || 'guest',
+    name: authUser?.displayName || 'User Falaah',
+    email: authUser?.email || '',
+    role: role,
+    totalExp: 0,
+    streak: 0
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <NavHeader user={user} onLogout={handleLogout} />
+      <NavHeader user={finalUser} onLogout={handleLogout} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-8">
-        {role === 'santri' && <SantriDashboard user={user} initialLog={MOCK_LOG} />}
-        {role === 'ustadz' && <UstadzDashboard />}
-        {role === 'wali' && <WaliDashboard />}
+        {role === 'santri' && <SantriDashboard user={finalUser} />}
+        {role === 'ustadz' && <UstadzDashboard user={finalUser} />}
+        {role === 'wali' && <WaliDashboard user={finalUser} />}
       </main>
       <Footer />
     </div>

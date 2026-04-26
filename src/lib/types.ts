@@ -1,3 +1,4 @@
+
 export type UserRole = 'santri' | 'ustadz' | 'wali';
 
 export interface UserProfile {
@@ -12,9 +13,11 @@ export interface UserProfile {
   photoUrl?: string;
   studentId?: string; // For Wali link
   linkedStudents?: string[]; // For Wali
+  assignedUstadzId?: string; // Teacher assigned to this student
 }
 
 export interface IbadahLog {
+  id?: string;
   uid: string;
   date: string;
   activities: {
@@ -29,4 +32,21 @@ export interface IbadahLog {
   isRevised: boolean;
   revisionNote?: string;
   awardedExp: number;
+}
+
+export interface HafalanSubmission {
+  id?: string;
+  santriId: string;
+  santriName?: string;
+  ibadahLogId: string;
+  submissionDate: string;
+  hafalanContent: string;
+  status: 'PENDING_REVIEW' | 'VERIFIED' | 'REVISED';
+  expAwarded: number;
+  ustadzId?: string;
+  ustadzNotes?: string;
+  verificationDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedUstadzId?: string;
 }
