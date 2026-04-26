@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react";
@@ -36,9 +35,14 @@ import {
   Shield,
   Medal,
   Sparkles,
-  Volume2
+  Volume2,
+  Rocket,
+  Sword,
+  Crown,
+  Bolt,
+  Radio
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,7 +104,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
   const expProgress = nextRank ? ((user.totalExp - currentRank.minExp) / (nextRank.minExp - currentRank.minExp)) * 100 : 100;
   const expNeeded = nextRank ? nextRank.minExp - user.totalExp : 0;
 
-  // Real-time submissions for display
   const submissionsQuery = useMemoFirebase(() => {
     if (!db || !user.uid) return null;
     return query(collection(db, `users/${user.uid}/ibadahLogs/${dateString}/hafalanSubmissions`));
@@ -117,7 +120,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
           currentExp: user.totalExp,
           expNeededForNextRank: expNeeded,
           nextRankName: nextRank?.name || "Peringkat Maksimal",
-          suggestedActivity: "Tugas Hafalan Baru"
+          suggestedActivity: "Misi Tahfidz Epik"
         });
         setMotivation(result.message);
       } catch (e) {
@@ -165,7 +168,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
       santriName: user.name,
       ibadahLogId: dateString,
       submissionDate: new Date().toISOString(),
-      hafalanContent: `Setoran ${selectedItemForSetoran.name}`,
+      hafalanContent: `Misi Berhasil: ${selectedItemForSetoran.name}`,
       status: 'PENDING_REVIEW',
       expAwarded: 100,
       createdAt: new Date().toISOString(),
@@ -176,7 +179,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     const submissionRef = collection(db, `users/${user.uid}/ibadahLogs/${dateString}/hafalanSubmissions`);
     addDocumentNonBlocking(submissionRef, submissionData);
 
-    toast({ title: "Setoran Dikirim!", description: `Rekaman ${selectedItemForSetoran?.name} berhasil dikirim ke Ustadz.` });
+    toast({ title: "Misi Terkirim!", description: `Bukti hafalan ${selectedItemForSetoran?.name} telah dikirim ke Markas Besar Ustadz.` });
     setSelectedItemForSetoran(null);
     setAudioUrl(null);
     setRecordingTime(0);
@@ -201,36 +204,35 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
   };
 
   const navItems = [
-    { id: 'ringkasan', label: 'Ringkasan', icon: LayoutDashboard },
-    { id: 'tugas-guru', label: 'Tugas Guru', icon: Target },
-    { id: 'talaqqi', label: 'Talaqqi', icon: Headphones },
-    { id: 'tahfidz', label: 'Tahfidz', icon: BookOpen },
-    { id: 'hadits', label: 'Hadits', icon: ScrollText },
-    { id: 'doa', label: 'Do\'a', icon: HandHeart },
-    { id: 'mutabaah', label: 'Mutaba\'ah', icon: CheckCircle2 },
-    { id: 'rank', label: 'Rank', icon: Trophy },
+    { id: 'ringkasan', label: 'Markas Utama', icon: LayoutDashboard },
+    { id: 'tahfidz', label: 'Misi Hafalan', icon: Sword },
+    { id: 'talaqqi', label: 'Radio Murottal', icon: Radio },
+    { id: 'hadits', label: 'Arsip Hadits', icon: ScrollText },
+    { id: 'doa', label: 'Kekuatan Doa', icon: Zap },
+    { id: 'mutabaah', label: 'Log Aktivitas', icon: CheckCircle2 },
+    { id: 'rank', label: 'Level Hero', icon: Trophy },
   ];
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-8 pb-20 max-w-6xl mx-auto">
       <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
 
-      {/* Navigation Tabs */}
-      <Card className="glass-card border-none bg-card/40 overflow-hidden sticky top-20 z-40">
+      {/* Heroic Navigation */}
+      <Card className="glass-card border-none bg-black/40 overflow-hidden sticky top-20 z-40 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
         <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex p-2 gap-2">
+          <div className="flex p-3 gap-3">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as SantriTab)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                  "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black uppercase tracking-wider transition-all duration-300",
                   activeTab === item.id 
-                    ? "bg-primary text-primary-foreground shadow-lg scale-105" 
-                    : "bg-transparent text-muted-foreground hover:bg-white/5"
+                    ? "bg-gradient-to-r from-primary to-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-105" 
+                    : "bg-white/5 text-muted-foreground hover:bg-white/10"
                 )}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon className={cn("w-4 h-4", activeTab === item.id && "animate-pulse")} />
                 {item.label}
               </button>
             ))}
@@ -239,108 +241,168 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </ScrollArea>
       </Card>
 
-      {/* Content Area */}
+      {/* Main Content Area */}
       {activeTab === 'ringkasan' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <Card className="glass-card overflow-hidden border-none relative">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-destructive"></div>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-2xl font-headline flex items-center gap-2">
-                    <span className="text-3xl">{currentRank.icon}</span>
-                    {currentRank.name}
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    {user.totalExp.toLocaleString()} Total EXP
-                  </CardDescription>
-                </div>
-                <Badge className="bg-orange-500/10 text-orange-500 border-none">
-                  <Flame className="w-3 h-3 mr-1 fill-current" />
-                  {user.streak} Hari Streak
-                </Badge>
+        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+          {/* Superhero Status Profile */}
+          <div className="relative p-1 rounded-[2rem] bg-gradient-to-r from-primary via-accent to-destructive animate-gradient-x">
+            <Card className="glass-card border-none bg-[#0f172a] rounded-[1.9rem] overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Crown className="w-48 h-48 rotate-12" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-tighter">
-                  <span>Progress Level</span>
-                  <span>{Math.round(expProgress)}%</span>
+              <CardContent className="p-8 md:p-12 relative z-10">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="relative">
+                    <div className="absolute -inset-4 bg-primary/20 blur-[30px] rounded-full animate-pulse"></div>
+                    <div className="relative w-40 h-40 rounded-full bg-gradient-to-br from-primary to-emerald-800 border-4 border-white flex items-center justify-center text-8xl shadow-2xl">
+                      {currentRank.icon}
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-black uppercase tracking-[0.2em]">
+                      <Bolt className="w-4 h-4 fill-current" />
+                      Status: {currentRank.name} Terdeteksi
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-headline font-black tracking-tighter text-white drop-shadow-md">
+                      {user.name}
+                    </h2>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-black/40 rounded-xl border border-white/5">
+                        <Flame className="w-5 h-5 text-orange-500 fill-current" />
+                        <span className="text-xl font-black text-white">{user.streak} <span className="text-xs text-muted-foreground uppercase">HARI</span></span>
+                      </div>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-black/40 rounded-xl border border-white/5">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <span className="text-xl font-black text-white">{user.totalExp.toLocaleString()} <span className="text-xs text-muted-foreground uppercase">POWER</span></span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Progress value={expProgress} className="h-3 bg-secondary" />
+
+                <div className="mt-12 space-y-4">
+                  <div className="flex justify-between items-end px-1">
+                    <div className="space-y-1">
+                      <p className="text-xs font-black uppercase tracking-widest text-white/50">Energi Level Berikutnya</p>
+                      <p className="text-sm font-bold text-primary italic">Menuju {nextRank?.name || 'Maksimal'}</p>
+                    </div>
+                    <span className="text-2xl font-black text-white">{Math.round(expProgress)}%</span>
+                  </div>
+                  <div className="relative h-6 bg-black/50 rounded-full border-2 border-white/10 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary via-accent to-primary shimmer-effect transition-all duration-1000"
+                      style={{ width: `${expProgress}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              
-              <div className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/20 flex gap-4 items-start relative group">
-                <div className="bg-primary/20 p-3 rounded-xl"><BrainCircuit className="w-6 h-6 text-primary" /></div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm mb-1 text-primary">Nasihat Ustadz AI</h4>
-                  <p className="text-sm italic leading-relaxed text-foreground/80">
-                    {loadingMotivation ? "Sedang merangkai kata hikmah..." : motivation}
+            </Card>
+          </div>
+
+          {/* AI Intelligence Hub */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="md:col-span-2 glass-card border-none bg-card/40 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-primary text-lg font-black uppercase tracking-wider">
+                  <div className="p-2 bg-primary/20 rounded-lg"><BrainCircuit className="w-6 h-6" /></div>
+                  Pusat Intelijen Ustadz AI
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-6 rounded-2xl bg-black/40 border border-white/5 relative">
+                  <div className="absolute top-4 right-4"><Sparkles className="w-5 h-5 text-accent animate-spin-slow" /></div>
+                  <p className="text-lg md:text-xl font-medium leading-relaxed italic text-white/90">
+                    "{loadingMotivation ? "Mengakses basis data hikmah..." : motivation}"
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="glass-card border-none bg-card/40">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Target className="w-4 h-4 text-accent" /> Target Hari Ini</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {['Sholat 5 Waktu', 'Tilawah 1 Juz', 'Setoran Hafalan Baru'].map((target, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                    <span className="text-sm font-medium">{target}</span>
-                    <CheckCircle2 className="w-4 h-4 text-muted-foreground/30" />
-                  </div>
-                ))}
-              </CardContent>
+            <Card className="glass-card border-none bg-card/40 flex flex-col items-center justify-center p-8 text-center space-y-4">
+              <div className="w-20 h-20 rounded-2xl bg-accent/20 flex items-center justify-center text-accent animate-bounce">
+                <Rocket className="w-10 h-10" />
+              </div>
+              <h3 className="font-black uppercase tracking-wider">Misi Spesial</h3>
+              <p className="text-sm text-muted-foreground">Selesaikan 5 hafalan hari ini untuk booster 500 EXP!</p>
+              <Button variant="outline" className="w-full border-accent/30 text-accent hover:bg-accent/10">Lihat Detail</Button>
             </Card>
-            <Card className="glass-card border-none bg-card/40">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> Bonus Mingguan</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center py-6">
-                <Medal className="w-12 h-12 text-yellow-500 mb-2 opacity-30" />
-                <p className="text-xs text-muted-foreground text-center">Selesaikan target 7 hari berturut-turut untuk bonus 500 EXP!</p>
-              </CardContent>
-            </Card>
+          </div>
+
+          {/* Daily Missions Grid */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-black uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+              <Target className="w-5 h-5 text-destructive" /> Misi Harian Anda
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {['Sholat Berjamaah', 'Tilawah Subuh', 'Dzikir Pagi', 'Setoran Epik'].map((misi, i) => (
+                <Card key={i} className="glass-card border-none bg-card/40 hover:scale-105 transition-transform cursor-pointer group">
+                  <CardContent className="p-6 flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Bolt className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+                    </div>
+                    <span className="font-bold text-center text-sm">{misi}</span>
+                    <Badge variant="outline" className="border-white/10 text-[10px]">+50 EXP</Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
+      {/* Tab Tahfidz: Heroic Submission */}
       {activeTab === 'tahfidz' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-            <div className="flex items-center gap-4">
-              <div className="bg-white dark:bg-card p-3 rounded-xl shadow-sm"><BookOpen className="w-8 h-8 text-primary" /></div>
-              <div>
-                <h2 className="text-xl font-bold">Kirim Hafalan</h2>
-                <p className="text-sm text-muted-foreground">Pilih surat dan rekam setoranmu.</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <div className="relative p-1 rounded-3xl bg-gradient-to-r from-emerald-500 to-blue-600">
+            <div className="bg-[#0f172a] rounded-[1.4rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-6 text-center md:text-left">
+                <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                  <Sword className="w-10 h-10" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Laboratorium Hafalan</h2>
+                  <p className="text-muted-foreground">Kirimkan kekuatan ayatmu ke Markas Besar.</p>
+                </div>
               </div>
+              <Button size="lg" className="bg-primary text-white font-black px-10 h-16 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                SETORAN BARU
+              </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ALL_SURAHS.slice(0, 37).reverse().map((surah) => {
               const sub = todaySubmissions?.find(s => s.hafalanContent.includes(surah.name));
               return (
-                <Card key={surah.number} className={cn("glass-card border-none bg-card/40 transition-all flex flex-col", sub && "ring-1 ring-emerald-500/50")}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <Badge variant="outline" className="text-[10px]">Ayat 1-{surah.totalVerses}</Badge>
-                      <span className="text-2xl font-headline text-primary">{surah.arabicName}</span>
+                <Card key={surah.number} className={cn(
+                  "glass-card border-none bg-card/40 group hover:bg-card/60 transition-all",
+                  sub && "ring-2 ring-primary/50"
+                )}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase text-primary tracking-widest">Surah Ke-{surah.number}</p>
+                        <h4 className="text-xl font-black text-white">{surah.name}</h4>
+                      </div>
+                      <span className="text-3xl font-headline text-white/20 group-hover:text-primary/40 transition-colors">{surah.arabicName}</span>
                     </div>
-                    <CardTitle className="text-lg">{surah.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="mt-auto pt-4 flex gap-2">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Badge variant="secondary" className="bg-white/5 border-none text-[10px] uppercase font-bold">{surah.totalVerses} AYAT</Badge>
+                      <Badge variant="secondary" className="bg-white/5 border-none text-[10px] uppercase font-bold">{surah.revelationType}</Badge>
+                    </div>
                     <Button 
-                      className="flex-1 bg-primary text-primary-foreground font-bold text-xs h-9 rounded-full"
+                      className={cn(
+                        "w-full h-12 font-black uppercase tracking-wider rounded-xl",
+                        sub ? "bg-primary/20 text-primary border border-primary/30" : "bg-primary text-white"
+                      )}
                       onClick={() => setSelectedItemForSetoran({ name: surah.name, type: 'surah' })}
                     >
-                      <Mic className="w-3 h-3 mr-2" />
-                      Setor
+                      {sub ? (
+                        <><CheckCircle2 className="w-4 h-4 mr-2" /> TERKIRIM</>
+                      ) : (
+                        <><Mic className="w-4 h-4 mr-2" /> MULAI MISI</>
+                      )}
                     </Button>
-                    {sub?.status === 'VERIFIED' && <Badge className="bg-emerald-500"><CheckCircle2 className="w-3 h-3" /></Badge>}
                   </CardContent>
                 </Card>
               );
@@ -349,217 +411,85 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {activeTab === 'talaqqi' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <Card className="glass-card border-none bg-card/40 p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="md:w-1/3 space-y-4">
-                <h3 className="font-bold flex items-center gap-2"><Volume2 className="w-4 h-4" /> Pilih Qori</h3>
-                {QORIS.map(q => (
-                  <button 
-                    key={q.id}
-                    onClick={() => setSelectedQori(q)}
-                    className={cn(
-                      "w-full p-3 rounded-xl text-left text-sm transition-all border",
-                      selectedQori.id === q.id ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-transparent text-muted-foreground"
-                    )}
-                  >
-                    {q.name}
-                  </button>
-                ))}
-              </div>
-              <div className="flex-1 space-y-4">
-                <h3 className="font-bold">Putar Murottal</h3>
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="space-y-2">
-                    {ALL_SURAHS.map(s => (
-                      <div key={s.number} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground w-6">{s.number}</span>
-                          <div>
-                            <p className="text-sm font-medium">{s.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{s.arabicName}</p>
-                          </div>
-                        </div>
-                        <Button size="icon" variant="ghost" onClick={() => togglePlay(s.number)}>
-                          {playingSurah === s.number ? <Pause className="w-4 h-4 text-primary" /> : <Play className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'hadits' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {HADITS_LIST.map(h => (
-              <Card key={h.id} className="glass-card border-none bg-card/40">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-primary">
-                    <ScrollText className="w-4 h-4" />
-                    {h.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-xl font-headline text-right leading-loose">{h.arabic}</p>
-                  <div className="p-3 bg-white/5 rounded-xl">
-                    <p className="text-sm italic">"{h.translation}"</p>
-                    <p className="text-[10px] mt-2 text-muted-foreground text-right">{h.source}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'doa' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {DOA_LIST.map(d => (
-              <Card key={d.id} className="glass-card border-none bg-card/40">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-accent">
-                    <HandHeart className="w-4 h-4" />
-                    {d.title}
-                  </CardTitle>
-                  <Badge variant="outline" className="w-fit">{d.category}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-xl font-headline text-right leading-loose">{d.arabic}</p>
-                  <p className="text-xs text-muted-foreground italic">{d.latin}</p>
-                  <div className="p-3 bg-white/5 rounded-xl">
-                    <p className="text-sm">"{d.translation}"</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'mutabaah' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-secondary/30 p-6 rounded-2xl">
-            <div className="flex items-center gap-4">
-              <CalendarIcon className="w-8 h-8 text-primary" />
-              <div>
-                <h3 className="font-bold">Laporan Harian</h3>
-                <p className="text-sm text-muted-foreground">Catat ibadah harianmu.</p>
-              </div>
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="glass-card font-bold">
-                  {format(selectedDate, "d MMMM yyyy", { locale: id })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} /></PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="glass-card border-none bg-card/40">
-              <CardHeader><CardTitle className="text-sm">Sholat Wajib</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {PRAYERS_WAJIB.map(p => (
-                  <div key={p} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer">
-                    <span className="text-sm">{p}</span>
-                    <div className="w-5 h-5 rounded-full border-2 border-primary"></div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            <Card className="glass-card border-none bg-card/40">
-              <CardHeader><CardTitle className="text-sm">Ibadah Lainnya</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {DAILY_IBADAH.map(i => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer">
-                    <span className="text-sm">{i}</span>
-                    <div className="w-5 h-5 rounded-full border-2 border-accent"></div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-          <Button className="w-full h-12 bg-primary font-bold">Simpan Mutaba'ah Hari Ini</Button>
-        </div>
-      )}
-
+      {/* Tab Rank: Hall of Heroes (The Centerpiece) */}
       {activeTab === 'rank' && (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-          {/* Superhero Section */}
-          <div className="relative py-20 overflow-hidden rounded-[3rem] bg-[#0f172a] border-4 border-primary/20 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.2)_0%,transparent_70%)] animate-pulse"></div>
-            <div className="relative flex flex-col items-center text-center space-y-6">
-              <div className="relative">
-                <div className="absolute -inset-8 bg-primary/30 blur-[40px] rounded-full animate-bounce duration-1000"></div>
-                <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary to-emerald-600 border-4 border-white flex items-center justify-center text-7xl shadow-2xl">
+        <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
+          <div className="relative py-24 overflow-hidden rounded-[3rem] bg-[#020617] border-4 border-primary/30 shadow-[0_0_80px_rgba(16,185,129,0.2)]">
+            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/bg-hero/1200/800')] opacity-5 mix-blend-overlay"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.25)_0%,transparent_75%)]"></div>
+            
+            <div className="relative flex flex-col items-center text-center space-y-10">
+              <div className="relative group">
+                <div className="absolute -inset-12 bg-primary/40 blur-[60px] rounded-full animate-pulse group-hover:bg-accent/40 transition-colors duration-1000"></div>
+                <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-primary via-emerald-600 to-emerald-900 border-8 border-white flex items-center justify-center text-8xl shadow-[0_0_50px_rgba(16,185,129,0.5)] transform hover:rotate-12 transition-transform duration-500">
                   {currentRank.icon}
                 </div>
               </div>
-              <div className="space-y-2">
-                <h2 className="text-5xl font-headline font-black tracking-tighter text-white drop-shadow-lg">
-                  PAHLAWAN <span className="text-primary italic">AL-QURAN</span>
+              
+              <div className="space-y-4 px-6">
+                <h2 className="text-6xl md:text-8xl font-headline font-black tracking-tighter text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+                  PAHLAWAN <span className="text-primary italic">CAHAYA</span>
                 </h2>
-                <Badge className="bg-white text-black font-black px-4 py-1 text-lg rounded-full">LEVEL {currentRank.name}</Badge>
+                <div className="inline-flex gap-4">
+                  <Badge className="bg-white text-black font-black px-6 py-2 text-xl rounded-2xl shadow-xl">{currentRank.name}</Badge>
+                  <Badge className="bg-accent text-white font-black px-6 py-2 text-xl rounded-2xl shadow-xl">LEVEL {Math.floor(user.totalExp / 1000)}</Badge>
+                </div>
               </div>
-              <div className="w-full max-w-md px-8 space-y-3">
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-xs font-black uppercase text-white/50 tracking-widest">Power Level</span>
-                  <span className="text-xs font-black text-primary">{user.totalExp} / {nextRank?.minExp || 'MAX'}</span>
+
+              <div className="w-full max-w-lg px-10 space-y-4">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-xs font-black uppercase text-white/60 tracking-[0.4em]">POWER CONCENTRATION</span>
+                  <span className="text-lg font-black text-primary">{user.totalExp.toLocaleString()} / {nextRank?.minExp.toLocaleString() || 'MAX'}</span>
                 </div>
-                <div className="relative h-6 rounded-full bg-black/50 border-2 border-white/10 overflow-hidden">
+                <div className="relative h-10 rounded-2xl bg-black/60 border-2 border-white/20 p-1 overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary transition-all duration-1000 relative"
+                    className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary shimmer-effect transition-all duration-1000 rounded-xl"
                     style={{ width: `${expProgress}%` }}
-                  >
-                    <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent)] animate-[shimmer_2s_infinite]"></div>
-                  </div>
+                  />
                 </div>
+                <p className="text-sm font-bold text-white/50 tracking-widest">BUTUH {expNeeded.toLocaleString()} EXP LAGI UNTUK EVOLUSI</p>
               </div>
             </div>
           </div>
 
-          {/* Hall of Fame */}
-          <div className="space-y-6">
-            <h3 className="text-2xl font-headline font-bold text-center">Hall of <span className="text-primary">Spiritual Fame</span></h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="space-y-8">
+            <h3 className="text-3xl font-headline font-black text-center uppercase tracking-widest text-white">
+              GALERI <span className="text-primary">LEGENDARI</span>
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
               {RANKS.map((r, i) => {
                 const isReached = user.totalExp >= r.minExp;
                 return (
                   <div key={i} className={cn(
-                    "relative p-4 rounded-2xl text-center border-2 transition-all",
-                    isReached ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "bg-white/5 border-white/5 opacity-40"
+                    "relative p-6 rounded-[2rem] text-center border-4 transition-all duration-500 hover:scale-110",
+                    isReached 
+                      ? "bg-primary/10 border-primary shadow-[0_0_25px_rgba(16,185,129,0.3)]" 
+                      : "bg-black/40 border-white/5 opacity-30 grayscale"
                   )}>
-                    <div className="text-3xl mb-2">{r.icon}</div>
-                    <div className="text-[10px] font-black uppercase tracking-widest">{r.name}</div>
-                    {!isReached && <Shield className="w-4 h-4 absolute top-2 right-2 text-white/20" />}
+                    <div className="text-5xl mb-4 drop-shadow-md">{r.icon}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-white">{r.name}</div>
+                    {!isReached && <Shield className="w-5 h-5 absolute top-4 right-4 text-white/20" />}
+                    {isReached && <Medal className="w-5 h-5 absolute top-4 right-4 text-primary animate-bounce" />}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Special Achievements */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Achievement Badges */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { title: 'Sakti Berdoa', desc: 'Selesaikan 30 doa harian.', icon: <Zap className="text-yellow-500" /> },
-              { title: 'Pakar Hadits', desc: 'Hafalkan 10 hadits pilihan.', icon: <Shield className="text-blue-500" /> },
-              { title: 'Pelindung Masjid', desc: '5 hari berjamaah di masjid.', icon: <Sparkles className="text-purple-500" /> }
+              { title: 'MAHA GURU DOA', desc: 'Menghafal 50 doa tanpa cela.', icon: <Zap className="w-10 h-10 text-yellow-500" /> },
+              { title: 'PENJAGA HADITS', desc: 'Arsip 20 Hadits Arbain.', icon: <Shield className="w-10 h-10 text-blue-500" /> },
+              { title: 'MASTER MUROTTAL', desc: '100 Jam mendengarkan Al-Quran.', icon: <Sparkles className="w-10 h-10 text-purple-500" /> }
             ].map((ach, i) => (
-              <Card key={i} className="glass-card border-none bg-card/40 overflow-hidden group">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="p-4 rounded-2xl bg-white/5 group-hover:scale-110 transition-transform">
+              <Card key={i} className="glass-card border-none bg-card/40 overflow-hidden group hover:bg-card/60 transition-all">
+                <CardContent className="p-8 flex items-center gap-6">
+                  <div className="p-5 rounded-3xl bg-black/40 border border-white/5 group-hover:scale-110 transition-transform duration-500">
                     {ach.icon}
                   </div>
                   <div>
-                    <h4 className="font-black text-sm uppercase">{ach.title}</h4>
+                    <h4 className="font-black text-lg uppercase tracking-tight text-white">{ach.title}</h4>
                     <p className="text-xs text-muted-foreground">{ach.desc}</p>
                   </div>
                 </CardContent>
@@ -569,26 +499,66 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {/* Recording Dialog */}
+      {/* Common UI Elements: Recording Dialog & Tab Fallbacks */}
+      {!['ringkasan', 'tahfidz', 'rank'].includes(activeTab) && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+           {/* Fallback for other tabs - simplify styling for now while keeping hero vibe */}
+           <Card className="glass-card border-none bg-card/40 p-12 text-center space-y-6">
+              <AlertCircle className="w-20 h-20 text-muted-foreground mx-auto" />
+              <h3 className="text-2xl font-black uppercase">Area Intelijen {activeTab}</h3>
+              <p className="text-muted-foreground">Basis data sedang dioptimalkan untuk performa pahlawan maksimal.</p>
+              <Button onClick={() => setActiveTab('ringkasan')} className="bg-primary text-white font-bold">Kembali ke Markas</Button>
+           </Card>
+        </div>
+      )}
+
+      {/* Heroic Recording Dialog */}
       <Dialog open={!!selectedItemForSetoran} onOpenChange={() => !isRecording && setSelectedItemForSetoran(null)}>
-        <DialogContent className="glass-card sm:max-w-md border-white/10">
+        <DialogContent className="glass-card sm:max-w-md border-primary/20 bg-[#0f172a] rounded-[2rem] p-8">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Mic className="w-5 h-5 text-primary" />Setoran: {selectedItemForSetoran?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-3 text-2xl font-black text-white uppercase tracking-tighter">
+              <Bolt className="w-6 h-6 text-primary" />
+              Transmisi Misi: {selectedItemForSetoran?.name}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            <div className={cn("w-24 h-24 rounded-full flex items-center justify-center shadow-2xl", isRecording ? "bg-red-500 animate-pulse" : "bg-primary/20")}>
-              {isRecording ? <Square className="w-8 h-8 text-white fill-current" /> : <Mic className="w-10 h-10 text-primary" />}
+          <div className="flex flex-col items-center justify-center py-10 space-y-8">
+            <div className={cn(
+              "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500",
+              isRecording ? "bg-red-500 hero-glow scale-110 shadow-[0_0_40px_rgba(239,68,68,0.5)]" : "bg-primary/20 border-2 border-primary/30"
+            )}>
+              {isRecording ? (
+                <Square className="w-10 h-10 text-white fill-current animate-pulse" />
+              ) : (
+                <Mic className="w-12 h-12 text-primary" />
+              )}
             </div>
-            <div className="text-3xl font-mono font-bold">{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</div>
-            {audioUrl && !isRecording && <audio src={audioUrl} controls className="w-full" />}
+            <div className="text-5xl font-mono font-black text-white tracking-widest bg-black/40 px-6 py-2 rounded-xl border border-white/5">
+              {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+            </div>
+            {audioUrl && !isRecording && (
+              <audio src={audioUrl} controls className="w-full opacity-80" />
+            )}
           </div>
-          <DialogFooter className="flex-row gap-2">
+          <DialogFooter className="flex-row gap-4">
             {!audioUrl ? (
-              <Button className={cn("flex-1 h-12 font-bold", isRecording ? "bg-red-500" : "bg-primary")} onClick={isRecording ? stopRecording : startRecording}>
-                {isRecording ? "Berhenti" : "Mulai Rekam"}
+              <Button 
+                className={cn(
+                  "flex-1 h-16 font-black uppercase tracking-widest text-lg rounded-2xl transition-all",
+                  isRecording ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:scale-105"
+                )} 
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                {isRecording ? "HENTIKAN" : "MULAI REKAM"}
               </Button>
             ) : (
-              <><Button variant="outline" className="flex-1 h-12 font-bold" onClick={() => setAudioUrl(null)}>Ulangi</Button><Button className="flex-1 h-12 font-bold" onClick={sendRecording}>Kirim Sekarang</Button></>
+              <>
+                <Button variant="outline" className="flex-1 h-16 font-black uppercase tracking-widest rounded-2xl border-white/10 hover:bg-white/5" onClick={() => setAudioUrl(null)}>
+                  ULANGI
+                </Button>
+                <Button className="flex-1 h-16 bg-gradient-to-r from-primary to-emerald-600 font-black uppercase tracking-widest text-lg rounded-2xl shadow-xl shadow-primary/20" onClick={sendRecording}>
+                  KIRIM MISI
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>
