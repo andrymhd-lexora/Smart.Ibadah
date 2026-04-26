@@ -38,7 +38,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
 import { collectionGroup, query, where, doc } from "firebase/firestore";
 
 interface UstadzDashboardProps {
@@ -46,21 +46,24 @@ interface UstadzDashboardProps {
 }
 
 export function UstadzDashboard({ user }: UstadzDashboardProps) {
+  const { user: authUser } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubmission, setSelectedSubmission] = useState<HafalanSubmission | null>(null);
   const [verificationNote, setVerificationNote] = useState("");
   const db = useFirestore();
 
   // REAL DATA: Fetch all submissions assigned to this Ustadz
+  // Pastikan query hanya berjalan jika user sudah terautentikasi (authUser tidak null)
   const submissionsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !authUser) return null;
+    
     // Collection Group query for hafalanSubmissions
     return query(
       collectionGroup(db, 'hafalanSubmissions'),
-      // In a real app, we filter by assignedUstadzId
-      // where('assignedUstadzId', '==', user.uid)
+      // Security Rules akan memfilter data berdasarkan 'assignedUstadzId'
+      // secara implisit melalui kebijakan keamanan.
     );
-  }, [db, user.uid]);
+  }, [db, authUser]);
 
   const { data: submissions, isLoading } = useCollection<HafalanSubmission>(submissionsQuery);
 
@@ -70,14 +73,14 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
   );
 
   const handleVerify = (status: 'VERIFIED' | 'REVISED', bonus = false) => {
-    if (!selectedSubmission || !db) return;
+    if (!selectedSubmission || !db || !authUser) return;
 
     // Build the correct reference path: /users/{santriId}/ibadahLogs/{logId}/hafalanSubmissions/{subId}
     const docRef = doc(db, `users/${selectedSubmission.santriId}/ibadahLogs/${selectedSubmission.ibadahLogId}/hafalanSubmissions`, (selectedSubmission as any).id);
 
     updateDocumentNonBlocking(docRef, {
       status: status,
-      ustadzId: user.uid,
+      ustadzId: authUser.uid,
       ustadzNotes: verificationNote,
       verificationDate: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

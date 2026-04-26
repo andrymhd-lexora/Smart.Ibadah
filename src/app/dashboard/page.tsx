@@ -2,7 +2,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
@@ -20,6 +20,13 @@ function DashboardContent() {
   const db = useFirestore();
   
   const role = (searchParams.get('role') as UserRole) || 'santri';
+
+  // Redirect ke landing page jika tidak ada user dan tidak sedang loading
+  useEffect(() => {
+    if (!isUserLoading && !authUser) {
+      router.push('/');
+    }
+  }, [isUserLoading, authUser, router]);
 
   // Fetch real profile from Firestore
   const userDocRef = useMemoFirebase(() => {
@@ -39,11 +46,14 @@ function DashboardContent() {
     </div>
   );
 
+  // Jika authUser belum tersedia (saat redirect), jangan render apa-apa agar tidak memicu query Firestore
+  if (!authUser) return null;
+
   // Fallback to local profile if document doesn't exist yet for prototyping
   const finalUser: UserProfile = profileData || {
-    uid: authUser?.uid || 'guest',
-    name: authUser?.displayName || 'User Falaah',
-    email: authUser?.email || '',
+    uid: authUser.uid,
+    name: authUser.displayName || 'User Falaah',
+    email: authUser.email || '',
     role: role,
     totalExp: 0,
     streak: 0

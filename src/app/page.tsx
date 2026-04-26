@@ -1,7 +1,8 @@
+
 "use client"
 
 import { useState } from "react";
-import { UserRole, UserProfile } from "@/lib/types";
+import { UserRole } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { 
   ShieldCheck, 
@@ -17,17 +18,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/firebase";
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 export default function LandingPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = (role: UserRole) => {
+    // Melakukan login secara anonim untuk keperluan prototype agar memiliki auth context di Firestore
+    initiateAnonymousSignIn(auth);
+    
     toast({
-      title: "Login Berhasil",
-      description: `Selamat datang kembali! Mengalihkan ke dashboard ${role}.`,
+      title: "Proses Masuk",
+      description: `Menyiapkan dashboard ${role}...`,
     });
+    
+    // Alihkan ke dashboard dengan role yang dipilih
     router.push(`/dashboard?role=${role}`);
   };
 
