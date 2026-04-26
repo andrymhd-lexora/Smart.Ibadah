@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   Loader2,
   UserPlus,
-  LogIn
+  LogIn,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useAuth, useUser } from "@/firebase";
-import { initiateAnonymousSignIn, initiateEmailSignIn, initiateEmailSignUp } from "@/firebase/non-blocking-login";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function LandingPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("santri");
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && authUser) {
@@ -40,7 +42,7 @@ export default function LandingPage() {
     }
   }, [authUser, isUserLoading, router]);
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (!email || !password) {
       toast({
         variant: "destructive",
@@ -50,37 +52,69 @@ export default function LandingPage() {
       return;
     }
 
-    if (mode === "register") {
-      if (!name) {
+    setIsLoadingAction(true);
+    try {
+      if (mode === "register") {
+        if (!name) {
+          toast({
+            variant: "destructive",
+            title: "Nama Diperlukan",
+            description: "Masukkan nama pahlawan Anda untuk pendaftaran.",
+          });
+          setIsLoadingAction(false);
+          return;
+        }
+        await createUserWithEmailAndPassword(auth, email, password);
         toast({
-          variant: "destructive",
-          title: "Nama Diperlukan",
-          description: "Masukkan nama pahlawan Anda untuk pendaftaran.",
+          title: "Pendaftaran Berhasil",
+          description: "Identitas pahlawan Anda telah didaftarkan!",
         });
-        return;
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({
+          title: "Akses Diterima",
+          description: "Selamat datang kembali di Markas Besar.",
+        });
       }
-      initiateEmailSignUp(auth, email, password);
-      toast({
-        title: "Pendaftaran Pahlawan",
-        description: "Mendaftarkan identitas Anda ke database pusat...",
-      });
-    } else {
-      initiateEmailSignIn(auth, email, password);
-      toast({
-        title: "Proses Masuk",
-        description: "Memverifikasi otoritas pahlawan Anda...",
-      });
-    }
 
-    // Redirect akan ditangani oleh useEffect authStateChanged di dashboard
-    // Kita kirim role dan name lewat URL sebagai fallback inisialisasi
-    const query = `?role=${role}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
-    router.push(`/dashboard${query}`);
+      // Redirect akan ditangani oleh useEffect authStateChanged di dashboard
+      const query = `?role=${role}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
+      router.push(`/dashboard${query}`);
+    } catch (error: any) {
+      let message = "Terjadi gangguan pada portal pusat.";
+      
+      if (error.code === 'auth/invalid-credential') {
+        message = "Email atau kata sandi salah. Silakan periksa kembali.";
+      } else if (error.code === 'auth/email-already-in-use') {
+        message = "Email ini sudah terdaftar sebagai pahlawan lain.";
+      } else if (error.code === 'auth/weak-password') {
+        message = "Kata sandi terlalu lemah. Gunakan minimal 6 karakter.";
+      } else if (error.code === 'auth/user-not-found') {
+        message = "Identitas tidak ditemukan. Silakan daftar akun baru.";
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Otorisasi Gagal",
+        description: message,
+      });
+      setIsLoadingAction(false);
+    }
   };
 
-  const handleAnonymous = (selectedRole: UserRole) => {
-    initiateAnonymousSignIn(auth);
-    router.push(`/dashboard?role=${selectedRole}`);
+  const handleAnonymous = async (selectedRole: UserRole) => {
+    setIsLoadingAction(true);
+    try {
+      await signInAnonymously(auth);
+      router.push(`/dashboard?role=${selectedRole}`);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Masuk Tamu",
+        description: "Tidak dapat mengakses portal tamu saat ini.",
+      });
+      setIsLoadingAction(false);
+    }
   };
 
   if (isUserLoading) return (
@@ -127,11 +161,12 @@ export default function LandingPage() {
         <div className="w-full max-w-md mx-auto">
           <Card className="glass-card shadow-2xl border-white/10">
             <CardHeader>
-              <CardTitle className="text-2xl font-headline uppercase tracking-tighter">
+              <CardTitle className="text-2xl font-headline uppercase tracking-tighter flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-accent" />
                 {mode === "login" ? "Otorisasi Pahlawan" : "Inisialisasi Pahlawan"}
               </CardTitle>
               <CardDescription>
-                {mode === "login" ? "Masuk ke markas Anda" : "Daftarkan identitas baru Anda"}
+                {mode === "login" ? "Masuk ke markas operasional Anda" : "Daftarkan identitas baru di sistem RTI"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -150,7 +185,7 @@ export default function LandingPage() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Terdaftar</Label>
+                    <Label htmlFor="email">Email Portal</Label>
                     <Input id="email" type="email" placeholder="pahlawan@falaah.id" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
@@ -158,21 +193,36 @@ export default function LandingPage() {
                     <Input id="password" type="password" placeholder="••••••••" className="bg-secondary/30" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
                   
-                  <Button className="w-full bg-primary text-white font-black h-14 mt-4 uppercase tracking-widest text-lg rounded-2xl" onClick={handleAction}>
-                    {mode === "login" ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />}
-                    {mode === "login" ? "MASUK MARKAS" : "DAFTAR SEKARANG"}
+                  <Button 
+                    className="w-full bg-primary hover:bg-emerald-600 text-white font-black h-14 mt-4 uppercase tracking-widest text-lg rounded-2xl shadow-lg shadow-primary/20 transition-all disabled:opacity-50" 
+                    onClick={handleAction}
+                    disabled={isLoadingAction}
+                  >
+                    {isLoadingAction ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <>
+                        {mode === "login" ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />}
+                        {mode === "login" ? "MASUK MARKAS" : "DAFTAR SEKARANG"}
+                      </>
+                    )}
                   </Button>
 
                   <div className="relative py-4">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#12141c] px-2 text-muted-foreground">Atau Akses Cepat</span></div>
+                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#12141c] px-2 text-muted-foreground">Akses Cepat</span></div>
                   </div>
 
-                  <Button variant="ghost" className="w-full text-white/50 hover:text-white" onClick={() => handleAnonymous(role)}>
-                    Masuk Sebagai Tamu (Tanpa Daftar)
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-white/50 hover:text-white hover:bg-white/5" 
+                    onClick={() => handleAnonymous(role)}
+                    disabled={isLoadingAction}
+                  >
+                    Masuk Sebagai Tamu
                   </Button>
 
-                  <div className="text-center">
+                  <div className="text-center pt-2">
                     <button 
                       className="text-primary font-bold hover:underline text-sm"
                       onClick={() => setMode(mode === "login" ? "register" : "login")}
