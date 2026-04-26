@@ -22,14 +22,12 @@ function DashboardContent() {
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
 
-  // Proteksi rute: jika loading selesai dan tidak ada user, kembali ke landing
   useEffect(() => {
     if (!isUserLoading && !authUser) {
       router.push('/');
     }
   }, [isUserLoading, authUser, router]);
 
-  // Query profil user dari Firestore
   const userDocRef = useMemoFirebase(() => {
     if (!db || !authUser) return null;
     return doc(db, 'users', authUser.uid);
@@ -37,7 +35,6 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Inisialisasi profil di Firestore jika belum ada (khusus untuk prototype)
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
@@ -47,6 +44,8 @@ function DashboardContent() {
         role: roleFromUrl,
         totalExp: 0,
         streak: 0,
+        whatsapp: '',
+        participantId: `RTI-${Math.floor(1000 + Math.random() * 9000)}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -60,7 +59,6 @@ function DashboardContent() {
     router.push('/');
   };
 
-  // Tampilkan loader selama proses autentikasi atau fetch profil
   if (isUserLoading || (authUser && isProfileLoading)) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
@@ -70,10 +68,8 @@ function DashboardContent() {
     </div>
   );
 
-  // Jika tidak ada user (saat redirect), jangan render apa-apa
   if (!authUser) return null;
 
-  // Gunakan data dari Firestore jika ada, atau fallback ke data awal
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
     name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'User Falaah'),

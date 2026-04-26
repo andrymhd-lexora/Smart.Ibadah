@@ -11,9 +11,13 @@ export interface UserProfile {
   school?: string;
   class?: string;
   photoUrl?: string;
+  whatsapp?: string;
+  participantId?: string;
   studentId?: string; // For Wali link
   linkedStudents?: string[]; // For Wali
   assignedUstadzId?: string; // Teacher assigned to this student
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IbadahLog {
@@ -32,6 +36,7 @@ export interface IbadahLog {
   isRevised: boolean;
   revisionNote?: string;
   awardedExp: number;
+  updatedAt?: string;
 }
 
 export interface HafalanSubmission {

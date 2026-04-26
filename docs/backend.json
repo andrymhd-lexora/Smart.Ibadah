@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -26,6 +27,14 @@
             "type": "string"
           }
         },
+        "whatsapp": {
+          "type": "string",
+          "description": "The WhatsApp number of the user for communication."
+        },
+        "participantId": {
+          "type": "string",
+          "description": "The unique participant ID assigned to the student."
+        },
         "rank": {
           "type": "string",
           "description": "The current gamified rank of the user, based on their total experience points.",
@@ -43,7 +52,7 @@
         },
         "linkedStudentIds": {
           "type": "array",
-          "description": "An array of User IDs of 'Santri' (students) that this 'Wali' (parent) user is linked to for monitoring purposes. (Relationship: User N:N User (Wali-Santri))",
+          "description": "An array of User IDs of 'Santri' (students) that this 'Wali' (parent) user is linked to for monitoring purposes.",
           "items": {
             "type": "string"
           }
@@ -75,7 +84,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "IbadahLog",
       "type": "object",
-      "description": "Records the daily religious activities and achievements of a 'Santri' (student), serving as a comprehensive progress tracker for a specific day.",
+      "description": "Records the daily religious activities and achievements of a 'Santri' (student).",
       "properties": {
         "id": {
           "type": "string",
@@ -83,7 +92,7 @@
         },
         "santriId": {
           "type": "string",
-          "description": "Reference to the User ID of the 'Santri' who submitted this log. (Relationship: User 1:N IbadahLog)"
+          "description": "Reference to the User ID of the Santri."
         },
         "logDate": {
           "type": "string",
@@ -92,44 +101,17 @@
         },
         "prayerTracker": {
           "type": "array",
-          "description": "A collection of prayer activities completed by the Santri on this day.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "quranSection": {
-          "type": "array",
-          "description": "Details related to Quran recitation and memorization activities for the day.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "dailyActivities": {
-          "type": "array",
-          "description": "A collection of various daily religious activities completed by the Santri.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "dzikirAudio": {
-          "type": "array",
-          "description": "Details regarding Dzikir recitation and Murottal audio listening.",
-          "items": {
-            "type": "string"
-          }
+          "items": { "type": "string" }
         },
         "targetAchieved": {
-          "type": "boolean",
-          "description": "Indicates whether the Santri met their personal daily goals for this log period."
+          "type": "boolean"
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when this ibadah log was created.",
           "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp indicating the last time this ibadah log was updated.",
           "format": "date-time"
         }
       },
@@ -137,10 +119,6 @@
         "id",
         "santriId",
         "logDate",
-        "prayerTracker",
-        "quranSection",
-        "dailyActivities",
-        "dzikirAudio",
         "targetAchieved",
         "createdAt",
         "updatedAt"
@@ -150,91 +128,27 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "HafalanSubmission",
       "type": "object",
-      "description": "Records individual 'Setoran Hafalan Tahfidz' submissions by a 'Santri' (student), including its content, associated media, and verification status by an 'Ustadz' (teacher).",
+      "description": "Records individual 'Setoran Hafalan Tahfidz' submissions by a 'Santri' (student).",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Unique identifier for the HafalanSubmission entity."
+          "type": "string"
         },
         "santriId": {
-          "type": "string",
-          "description": "Reference to the User ID of the 'Santri' who made this hafalan submission. (Relationship: User 1:N HafalanSubmission)"
-        },
-        "ibadahLogId": {
-          "type": "string",
-          "description": "Reference to the IbadahLog entity for the day this hafalan was submitted. (Relationship: IbadahLog 1:N HafalanSubmission)"
-        },
-        "submissionDate": {
-          "type": "string",
-          "description": "The exact timestamp when the hafalan was submitted by the Santri.",
-          "format": "date-time"
-        },
-        "hafalanContent": {
-          "type": "string",
-          "description": "The text or description of the memorization content submitted by the Santri."
-        },
-        "surahName": {
-          "type": "string",
-          "description": "The name of the Surah (chapter) being memorized. Optional."
-        },
-        "startVerse": {
-          "type": "number",
-          "description": "The starting verse number of the memorization. Optional."
-        },
-        "endVerse": {
-          "type": "number",
-          "description": "The ending verse number of the memorization. Optional."
-        },
-        "audioRecordingUrl": {
-          "type": "string",
-          "description": "A URL to an audio recording of the recitation, if provided by the Santri. Optional.",
-          "format": "uri"
+          "type": "string"
         },
         "status": {
-          "type": "string",
-          "description": "The current verification status of the hafalan submission.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "ustadzId": {
-          "type": "string",
-          "description": "Reference to the User ID of the 'Ustadz' (teacher) who reviewed this submission. Null if not yet reviewed. (Relationship: User 1:N HafalanSubmission (Reviewer))"
-        },
-        "verificationDate": {
-          "type": "string",
-          "description": "The timestamp when the hafalan submission was reviewed by the Ustadz. Null if not yet reviewed.",
-          "format": "date-time"
-        },
-        "ustadzNotes": {
-          "type": "string",
-          "description": "Optional notes or feedback provided by the Ustadz during the verification process."
-        },
-        "expAwarded": {
-          "type": "number",
-          "description": "The amount of experience points (EXP) granted for this specific hafalan submission, including any bonuses."
+          "type": "string"
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when this hafalan submission was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating the last time this hafalan submission was updated (e.g., status change).",
           "format": "date-time"
         }
       },
       "required": [
         "id",
         "santriId",
-        "ibadahLogId",
-        "submissionDate",
-        "hafalanContent",
         "status",
-        "expAwarded",
-        "createdAt",
-        "updatedAt"
+        "createdAt"
       ]
     }
   },
@@ -253,60 +167,9 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Collection for all user profiles (Santri, Pengajar/Ustadz, Wali). Santri documents will include denormalized 'assignedUstadzId' (UID of their primary Ustadz) and 'linkedWaliIds' (array of UIDs of linked parents) for authorization independence in subcollections.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (Firebase Auth UID)."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{santriId}/ibadahLogs/{ibadahLogId}",
-        "definition": {
-          "entityName": "IbadahLog",
-          "schema": {
-            "$ref": "#/backend/entities/IbadahLog"
-          },
-          "description": "Subcollection for daily Ibadah logs of a specific Santri. Each document includes denormalized 'santriId', 'assignedUstadzId', and 'linkedWaliIds' for authorization independence.",
-          "params": [
-            {
-              "name": "santriId",
-              "description": "The unique identifier of the Santri (student)."
-            },
-            {
-              "name": "ibadahLogId",
-              "description": "The unique identifier for the daily ibadah log."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{santriId}/ibadahLogs/{ibadahLogId}/hafalanSubmissions/{submissionId}",
-        "definition": {
-          "entityName": "HafalanSubmission",
-          "schema": {
-            "$ref": "#/backend/entities/HafalanSubmission"
-          },
-          "description": "Subcollection for Hafalan (memorization) submissions made by a Santri as part of a daily IbadahLog. Each document includes denormalized 'santriId', 'ibadahLogId', 'assignedUstadzId', and 'linkedWaliIds' for authorization independence. This enables Ustadz and Wali to list and access relevant submissions securely.",
-          "params": [
-            {
-              "name": "santriId",
-              "description": "The unique identifier of the Santri (student)."
-            },
-            {
-              "name": "ibadahLogId",
-              "description": "The unique identifier for the daily ibadah log."
-            },
-            {
-              "name": "submissionId",
-              "description": "The unique identifier for the specific hafalan submission."
-            }
-          ]
+          "description": "Collection for all user profiles."
         }
       }
-    ],
-    "reasoning": "The proposed Firestore data structure is designed to support a multi-user, role-based access control (RBAC) system for the Falaah application, prioritizing security, scalability, and debuggability. The core strategy revolves around Authorization Independence through strategic denormalization and Structural Segregation for clear security postures.1.  **Users Collection (`/users/{userId}`):** This top-level collection stores all user profiles (Santri, Pengajar/Ustadz, Wali). Each user document includes their `role` for general capability-based access control. To support direct relationships without `get()` calls for child documents, `Santri` user documents will denormalize `assignedUstadzId` (the ID of their primary Ustadz) and `linkedWaliIds` (an array of parent UIDs linked to this Santri).2.  **IbadahLogs Subcollection (`/users/{santriId}/ibadahLogs/{ibadahLogId}`):** `IbadahLog` entities are nested as a subcollection under the respective Santri's user document. This establishes clear path-based ownership. To achieve authorization independence for `IbadahLog` access, each `IbadahLog` document will denormalize `santriId` (already present, but explicit for rules), `assignedUstadzId` (from the Santri's profile), and `linkedWaliIds` (from the Santri's profile). This allows Ustadz to read logs of their assigned students and Wali to read logs of their linked children without requiring `get()` calls on the parent Santri document within security rules.3.  **HafalanSubmissions Subcollection (`/users/{santriId}/ibadahLogs/{ibadahLogId}/hafalanSubmissions/{submissionId}`):** `HafalanSubmission` entities are nested further within the daily `IbadahLog` of a Santri. This maintains a logical hierarchy: a Santri submits multiple hafalans as part of their daily ibadah. To directly address the user's problem statement (\"data hasil setoran dari santri tidak tampil untuk di cek oleh ustad nya\"), each `HafalanSubmission` document will denormalize `santriId`, `ibadahLogId` (for context), `assignedUstadzId` (the Ustadz assigned to the Santri), and `linkedWaliIds` (the parents linked to the Santri). The `ustadzId` field, already present, will indicate the specific Ustadz who *reviewed* the submission, which can differ from the `assignedUstadzId`.**Authorization Independence (CRITICAL):**This design achieves Authorization Independence by explicitly denormalizing all relevant authorization context into the documents themselves. For `IbadahLog` and `HafalanSubmission` documents, the `assignedUstadzId` and `linkedWaliIds` fields are copied from the parent `Santri` user document. This eliminates the need for `get()` calls in Firestore Security Rules to determine if an Ustadz is assigned to a Santri, or if a Wali is linked to a Santri, when accessing their `IbadahLog` or `HafalanSubmission`. This allows for atomic writes/updates and simplifies rule debugging.**QAPs (Rules are not Filters) for `list` operations:**A Santri can easily `list` their own `IbadahLog` and `HafalanSubmission` documents using direct path-based queries, as `request.auth.uid` matches `{santriId}` in the path. A Wali can `list` all `IbadahLog` and `HafalanSubmission` documents for their linked students by performing `collectionGroup` queries. The rules will check `where('linkedWaliIds', 'array-contains', request.auth.uid)`. This allows the UI to fetch all relevant child data efficiently and securely. An Ustadz can `list` all `IbadahLog` and `HafalanSubmission` documents for their assigned students (or those requiring review) using `collectionGroup` queries. The rules will check `where('assignedUstadzId', '==', request.auth.uid)` and potentially `where('status', '==', 'PENDING_REVIEW')`. This directly solves the Ustadz's problem of not knowing \"setoran apa saja\" and allows them to view \"rekaman tidak muncul\" (audio recording URL) directly within these documents, as it's part of the `HafalanSubmission` schema.This structure ensures that each document carries its own authorization metadata, enabling robust and performant queries and security rules without complex `get()` dependencies."
+    ]
   }
 }
