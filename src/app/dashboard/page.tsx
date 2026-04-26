@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ function DashboardContent() {
   const db = useFirestore();
   
   const roleFromUrl = searchParams.get('role') as UserRole;
+  const nameFromUrl = searchParams.get('name');
 
   // Proteksi rute: jika loading selesai dan tidak ada user, kembali ke landing
   useEffect(() => {
@@ -40,7 +42,7 @@ function DashboardContent() {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
         uid: authUser.uid,
-        name: authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`,
+        name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
         role: roleFromUrl,
         totalExp: 0,
@@ -52,7 +54,7 @@ function DashboardContent() {
       const docRef = doc(db, 'users', authUser.uid);
       setDocumentNonBlocking(docRef, newUser, { merge: true });
     }
-  }, [authUser, isProfileLoading, profileData, db, roleFromUrl]);
+  }, [authUser, isProfileLoading, profileData, db, roleFromUrl, nameFromUrl]);
 
   const handleLogout = () => {
     router.push('/');
@@ -74,7 +76,7 @@ function DashboardContent() {
   // Gunakan data dari Firestore jika ada, atau fallback ke data awal
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
-    name: authUser.displayName || 'User Falaah',
+    name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'User Falaah'),
     email: authUser.email || '',
     role: roleFromUrl || 'santri',
     totalExp: 0,

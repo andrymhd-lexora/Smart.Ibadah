@@ -36,8 +36,11 @@ export default function LandingPage() {
       description: `Menyiapkan dashboard ${role}...`,
     });
     
-    // Alihkan ke dashboard dengan role yang dipilih
-    router.push(`/dashboard?role=${role}`);
+    // Ambil bagian depan email sebagai nama default jika tersedia
+    const displayName = email ? email.split('@')[0] : "";
+    
+    // Alihkan ke dashboard dengan role dan nama yang dipilih
+    router.push(`/dashboard?role=${role}${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`);
   };
 
   return (
@@ -95,8 +98,8 @@ export default function LandingPage() {
 
                 <TabsContent value="santri" className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email-santri">Alamat Email</Label>
-                    <Input id="email-santri" placeholder="faiz@example.com" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
+                    <Label htmlFor="email-santri">Alamat Email / Nama</Label>
+                    <Input id="email-santri" placeholder="faiz atau faiz@example.com" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-santri">Kata Sandi</Label>
