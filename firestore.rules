@@ -1,57 +1,24 @@
 rules_version = '2';
 
 /**
- * Falaah Application Security Rules - Optimized for Prototyping
+ * Falaah Application Security Rules - Prototipe Terbuka
  * 
- * Filosofi:
- * Memberikan akses baca dan tulis yang cukup bagi pengguna terautentikasi (Santri, Ustadz, Wali)
- * untuk memastikan aliran data real-time antar peran tanpa hambatan query yang kompleks.
+ * Aturan ini dirancang untuk memudahkan pengembangan prototipe dengan mengizinkan
+ * akses baca dan tulis ke seluruh dokumen bagi pengguna yang sudah terautentikasi.
+ * Ini akan memperbaiki masalah "Missing or insufficient permissions" pada query
+ * global (Collection Group) yang digunakan oleh Ustadz dan Wali.
  */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- HELPER FUNCTIONS ---
-
-    function isSignedIn() {
-      return request.auth != null;
+    // Izinkan semua akses baca/tulis jika pengguna sudah masuk (authenticated)
+    // Ini mencakup query koleksi langsung maupun Collection Group.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // --- COLLECTION RULES ---
-
-    match /users/{userId} {
-      allow get, list: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-    }
-
-    // Aturan untuk Ibadah Logs dan Hafalan Submissions
-    // Dipermudah untuk prototipe agar Collection Group Query (Ustadz & Wali) bisa berjalan
-    match /users/{santriId}/ibadahLogs/{ibadahLogId} {
-      allow read, list: if isSignedIn();
-      allow create, update, delete: if isOwner(santriId) || isSignedIn(); 
-    }
-
-    match /users/{santriId}/ibadahLogs/{ibadahLogId}/hafalanSubmissions/{submissionId} {
-      allow read, list: if isSignedIn();
-      allow create: if isOwner(santriId);
-      // Ustadz diizinkan mengupdate status verifikasi
-      allow update: if isSignedIn(); 
-      allow delete: if isOwner(santriId);
-    }
-    
-    // Support untuk Collection Group queries (Penting untuk Dashboard Ustadz & Wali)
-    match /{path=**}/ibadahLogs/{logId} {
-      allow read, list: if isSignedIn();
-    }
-    
-    match /{path=**}/hafalanSubmissions/{subId} {
-      allow read, list: if isSignedIn();
-    }
-
+    // Catatan: Untuk produksi, aturan ini harus diperketat berdasarkan peran (RBAC)
+    // dan kepemilikan dokumen untuk keamanan data yang lebih baik.
   }
 }
