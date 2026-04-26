@@ -58,19 +58,27 @@ function ProfileContent() {
   }, [profileData, authUser]);
 
   const handleSave = () => {
-    if (!authUser || !db || !profileData) return;
+    if (!authUser || !db || !profileData) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Menyimpan",
+        description: "Data profil belum termuat sempurna.",
+      });
+      return;
+    }
     
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Role TIDAK BOLEH diubah di sini
+    // Peran (Role) di database tidak boleh diubah oleh user
     const updatedData = {
       ...formData,
       uid: authUser.uid,
-      role: profileData.role, // Memastikan role tetap sesuai database
+      role: profileData.role, 
       updatedAt: new Date().toISOString()
     };
 
+    // Menggunakan setDocumentNonBlocking dengan merge: true agar lebih andal
     setDocumentNonBlocking(docRef, updatedData, { merge: true });
 
     setTimeout(() => {
@@ -79,6 +87,8 @@ function ProfileContent() {
         title: "Identitas Disinkronkan",
         description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
+      // Redirect ke dashboard untuk melihat perubahan
+      router.push(`/dashboard?role=${profileData.role}`);
     }, 1000);
   };
 
@@ -163,7 +173,7 @@ function ProfileContent() {
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Pahlawan'}</h2>
                 <Badge variant="secondary" className="bg-primary/20 text-primary uppercase font-black text-[10px] px-4 py-1 flex items-center gap-1 mx-auto w-fit">
                   <Shield className="w-3 h-3" />
-                  {profileData?.role || 'SANTRI'}
+                  {profileData?.role?.toUpperCase() || 'SANTRI'}
                 </Badge>
               </div>
               <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">

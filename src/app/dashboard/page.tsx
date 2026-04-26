@@ -2,7 +2,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense, useMemo } from "react";
+import { useEffect, Suspense } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
@@ -21,7 +21,7 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Data dari URL hanya digunakan sebagai cadangan saat pendaftaran pertama
+  // Data dari URL hanya digunakan sebagai petunjuk saat pendaftaran pertama
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
 
@@ -32,14 +32,14 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Perbaikan: Navigasi harus di dalam useEffect untuk menghindari error setState-in-render
+  // Guard: Pastikan user terautentikasi
   useEffect(() => {
     if (!isUserLoading && !authUser) {
       router.push('/');
     }
   }, [authUser, isUserLoading, router]);
 
-  // Inisialisasi User Baru (Hanya sekali saat registrasi)
+  // Inisialisasi User Baru (Hanya jika belum ada di DB)
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
@@ -79,11 +79,12 @@ function DashboardContent() {
     </div>
   );
 
-  // Jika tidak ada user dan loading selesai, useEffect di atas akan menangani redirect
   if (!authUser) return null;
 
-  // Sumber kebenaran mutlak peran (Role) adalah dari database jika sudah ada
-  // Hal ini mencegah user pindah dashboard dengan mengubah URL
+  /**
+   * KRITIKAL: Sumber kebenaran peran (Role) adalah database (profileData).
+   * URL Parameter 'role' diabaikan jika user sudah terdaftar di database.
+   */
   const finalRole: UserRole = profileData?.role || roleFromUrl || 'santri';
 
   const finalUser: UserProfile = {
@@ -105,6 +106,7 @@ function DashboardContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <NavHeader user={finalUser} onLogout={handleLogout} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-8">
+        {/* Kontrol Dashboard Berdasarkan Peran Database */}
         {finalRole === 'santri' && <SantriDashboard user={finalUser} />}
         {finalRole === 'ustadz' && <UstadzDashboard user={finalUser} />}
         {finalRole === 'wali' && <WaliDashboard user={finalUser} />}
