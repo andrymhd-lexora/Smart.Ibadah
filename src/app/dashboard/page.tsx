@@ -2,14 +2,14 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense, useState } from "react";
+import { useEffect, Suspense, useMemo } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
 import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -21,7 +21,7 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Data dari URL hanya digunakan untuk pendaftaran user baru
+  // Data dari URL hanya digunakan sebagai cadangan saat pendaftaran pertama
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
 
@@ -32,14 +32,21 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
+  // Perbaikan: Navigasi harus di dalam useEffect untuk menghindari error setState-in-render
+  useEffect(() => {
+    if (!isUserLoading && !authUser) {
+      router.push('/');
+    }
+  }, [authUser, isUserLoading, router]);
+
   // Inisialisasi User Baru (Hanya sekali saat registrasi)
   useEffect(() => {
-    if (authUser && !isProfileLoading && !profileData && db) {
+    if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
-        role: roleFromUrl || 'santri',
+        role: roleFromUrl, // Mengunci role dari pilihan saat daftar
         totalExp: 0,
         streak: 0,
         whatsapp: '',
@@ -72,12 +79,11 @@ function DashboardContent() {
     </div>
   );
 
-  if (!authUser) {
-    router.push('/');
-    return null;
-  }
+  // Jika tidak ada user dan loading selesai, useEffect di atas akan menangani redirect
+  if (!authUser) return null;
 
-  // Sumber kebenaran mutlak peran (Role) adalah dari database
+  // Sumber kebenaran mutlak peran (Role) adalah dari database jika sudah ada
+  // Hal ini mencegah user pindah dashboard dengan mengubah URL
   const finalRole: UserRole = profileData?.role || roleFromUrl || 'santri';
 
   const finalUser: UserProfile = {
