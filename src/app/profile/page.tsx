@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail } from "lucide-react";
+import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -75,13 +75,26 @@ function ProfileContent() {
         title: "Identitas Disinkronkan",
         description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
-    }, 1000);
+    }, 800);
   };
 
-  const handlePhotoClick = () => {
+  const handlePhotoUpload = () => {
+    if (!authUser || !db) return;
+    
+    // Simulasi unggah foto dengan placeholder epik
+    const mockPhotoUrl = `https://picsum.photos/seed/${Math.random()}/400/400`;
+    
     toast({
-      title: "Integrasi Citra Pahlawan",
-      description: "Fitur unggah foto langsung sedang dalam enkripsi tingkat tinggi.",
+      title: "Citra Pahlawan Diperbarui",
+      description: "Menghubungkan citra baru ke profil spiritual Anda...",
+    });
+
+    setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
+    
+    const docRef = doc(db, 'users', authUser.uid);
+    updateDocumentNonBlocking(docRef, {
+      photoUrl: mockPhotoUrl,
+      updatedAt: new Date().toISOString()
     });
   };
 
@@ -104,8 +117,8 @@ function ProfileContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <NavHeader user={profileData || { name: formData.name || 'Pahlawan', totalExp: 0, streak: 0, role: roleFromUrl } as any} onLogout={handleLogout} />
       
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-12 md:px-8">
-        <div className="mb-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-12 md:px-8">
+        <div className="mb-8 flex items-center justify-between">
           <Button 
             variant="ghost" 
             className="gap-2 text-muted-foreground hover:text-white transition-colors"
@@ -114,134 +127,139 @@ function ProfileContent() {
             <ArrowLeft className="w-4 h-4" />
             Kembali ke Markas Utama
           </Button>
+          <div className="flex items-center gap-2 text-accent animate-pulse">
+            <Sparkles className="w-5 h-5" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Editor Pahlawan Aktif</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Avatar Card */}
-          <Card className="glass-card border-white/10 shadow-2xl h-fit">
-            <CardContent className="p-8 text-center space-y-6">
-              <div className="relative mx-auto w-40 h-40">
-                <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse"></div>
-                <Avatar className="w-40 h-40 border-4 border-primary/30 shadow-2xl relative z-10">
-                  <AvatarImage src={formData.photoUrl} />
+          <Card className="glass-card border-none bg-card/40 shadow-2xl h-fit overflow-hidden">
+            <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30"></div>
+            <CardContent className="p-8 text-center space-y-6 -mt-16">
+              <div className="relative mx-auto w-40 h-40 group">
+                <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse group-hover:bg-primary/40 transition-all"></div>
+                <Avatar className="w-40 h-40 border-4 border-background shadow-2xl relative z-10 transition-transform group-hover:scale-105 duration-500">
+                  <AvatarImage src={formData.photoUrl} className="object-cover" />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-emerald-800 text-white text-5xl font-black">
                     {(formData.name || 'P').charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <Button 
                   size="icon" 
-                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-background z-20"
-                  onClick={handlePhotoClick}
+                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-background z-20 hover:scale-110 transition-all"
+                  onClick={handlePhotoUpload}
                 >
                   <Camera className="w-5 h-5" />
                 </Button>
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name}</h2>
-                <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4">
+                <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4 py-1">
                   {roleFromUrl}
                 </Badge>
               </div>
               <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
                 <div className="text-center">
                   <p className="text-[10px] font-black text-white/40 uppercase">Power Level</p>
-                  <p className="text-lg font-black text-accent">{profileData?.totalExp?.toLocaleString() || 0}</p>
+                  <p className="text-xl font-black text-accent">{profileData?.totalExp?.toLocaleString() || 0}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-[10px] font-black text-white/40 uppercase">Misi Aktif</p>
-                  <p className="text-lg font-black text-primary">{profileData?.streak || 0} Hari</p>
+                  <p className="text-xl font-black text-primary">{profileData?.streak || 0} Hari</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Form Card */}
-          <Card className="lg:col-span-2 glass-card border-white/10 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-2xl font-headline font-black text-white">Identitas Pahlawan</CardTitle>
-              <CardDescription>Sesuaikan detail biodata Anda di Rumah Tahfidz Ikhsan</CardDescription>
+          <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl">
+            <CardHeader className="border-b border-white/5 pb-8">
+              <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Identitas Pahlawan</CardTitle>
+              <CardDescription className="text-muted-foreground font-medium">Sesuaikan detail biodata Anda di Rumah Tahfidz Ikhsan</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-8 pt-6">
+            <CardContent className="space-y-8 pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <Label htmlFor="name" className="text-xs font-black uppercase text-white/50 tracking-widest">Nama Lengkap</Label>
+                  <Label htmlFor="name" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nama Lengkap</Label>
                   <Input 
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="h-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
+                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary focus:ring-primary/20 transition-all text-lg"
                     placeholder="Masukkan nama pahlawan"
                   />
                 </div>
                 
                 <div className="space-y-3">
-                  <Label htmlFor="participantId" className="text-xs font-black uppercase text-white/50 tracking-widest">Nomor Peserta (ID)</Label>
+                  <Label htmlFor="participantId" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nomor Peserta (ID)</Label>
                   <div className="relative">
-                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                     <Input 
                       id="participantId" 
                       value={formData.participantId} 
                       onChange={(e) => setFormData({...formData, participantId: e.target.value})}
-                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
+                      className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
                       placeholder="Contoh: RTI-2024-001"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-xs font-black uppercase text-white/50 tracking-widest">Email Terdaftar</Label>
+                  <Label htmlFor="email" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Email Terdaftar</Label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     <Input 
                       id="email" 
                       value={formData.email} 
                       disabled
-                      className="h-12 pl-12 bg-white/5 border-white/5 opacity-50 text-white font-bold cursor-not-allowed"
+                      className="h-14 pl-12 bg-white/5 border-white/5 opacity-50 text-white/40 font-bold cursor-not-allowed text-lg"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="whatsapp" className="text-xs font-black uppercase text-white/50 tracking-widest">Nomor WhatsApp</Label>
+                  <Label htmlFor="whatsapp" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nomor WhatsApp</Label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                     <Input 
                       id="whatsapp" 
                       value={formData.whatsapp} 
                       onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                      className="h-12 pl-12 bg-black/40 border-white/10 rounded-xl text-white font-bold focus:border-primary transition-all"
-                      placeholder="Contoh: 081234567890"
+                      className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
+                      placeholder="Contoh: 0812..."
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="school" className="text-xs font-black uppercase text-white/50 tracking-widest">Asal Sekolah / Markas</Label>
+                  <Label htmlFor="school" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Asal Sekolah / Markas</Label>
                   <Input 
                     id="school" 
                     placeholder="Contoh: SMP IT Ikhsan"
                     value={formData.school} 
                     onChange={(e) => setFormData({...formData, school: e.target.value})}
-                    className="h-12 bg-black/40 border-white/10 rounded-xl text-white font-bold"
+                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold text-lg"
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="class" className="text-xs font-black uppercase text-white/50 tracking-widest">Kelas / Skuad</Label>
+                  <Label htmlFor="class" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Kelas / Skuad</Label>
                   <Input 
                     id="class" 
                     placeholder="Contoh: 9A atau Pengajar"
                     value={formData.class} 
                     onChange={(e) => setFormData({...formData, class: e.target.value})}
-                    className="h-12 bg-black/40 border-white/10 rounded-xl text-white font-bold"
+                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold text-lg"
                   />
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-white/5">
+              <div className="pt-10 border-t border-white/5">
                 <Button 
-                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-2xl gap-3 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all"
+                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_45px_rgba(16,185,129,0.5)] transition-all text-xl uppercase tracking-tighter"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -252,7 +270,7 @@ function ProfileContent() {
                     </>
                   ) : (
                     <>
-                      <Save className="w-6 h-6" />
+                      <Save className="w-8 h-8" />
                       SIMPAN PERUBAHAN IDENTITAS
                     </>
                   )}

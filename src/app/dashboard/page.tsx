@@ -35,6 +35,7 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
+  // Inisialisasi User Baru jika belum ada di Firestore
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
@@ -70,7 +71,7 @@ function DashboardContent() {
 
   if (!authUser) return null;
 
-  // Nama diprioritaskan dari profileData yang ada di Firestore
+  // Nama diprioritaskan dari profileData yang ada di Firestore untuk sinkronisasi real-time
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
     name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || 'Pahlawan Falaah'),
