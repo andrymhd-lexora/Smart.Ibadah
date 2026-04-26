@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import { UserProfile, HafalanSubmission } from "@/lib/types";
-import { RANKS, getRankByExp } from "@/lib/constants";
 import { 
   Users, 
   Search, 
@@ -12,7 +11,6 @@ import {
   Star,
   ExternalLink,
   Filter,
-  Clock,
   Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
-import { collectionGroup, query, where, doc } from "firebase/firestore";
+import { collectionGroup, query, doc, orderBy } from "firebase/firestore";
 
 interface UstadzDashboardProps {
   user: UserProfile;
@@ -52,30 +50,26 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
   const [verificationNote, setVerificationNote] = useState("");
   const db = useFirestore();
 
-  // REAL DATA: Fetch all submissions assigned to this Ustadz
-  // Pastikan query hanya berjalan jika user sudah terautentikasi (authUser tidak null)
+  // Ambil semua setoran hafalan secara global untuk dashboard ustadz (Collection Group)
   const submissionsQuery = useMemoFirebase(() => {
     if (!db || !authUser) return null;
-    
-    // Collection Group query for hafalanSubmissions
     return query(
       collectionGroup(db, 'hafalanSubmissions'),
-      // Security Rules akan memfilter data berdasarkan 'assignedUstadzId'
-      // secara implisit melalui kebijakan keamanan.
+      orderBy('submissionDate', 'desc')
     );
   }, [db, authUser]);
 
   const { data: submissions, isLoading } = useCollection<HafalanSubmission>(submissionsQuery);
 
   const filteredSubmissions = (submissions || []).filter(s => 
-    s.santriName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.hafalanContent.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.santriName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.hafalanContent.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleVerify = (status: 'VERIFIED' | 'REVISED', bonus = false) => {
     if (!selectedSubmission || !db || !authUser) return;
 
-    // Build the correct reference path: /users/{santriId}/ibadahLogs/{logId}/hafalanSubmissions/{subId}
+    // Path dokumen: /users/{santriId}/ibadahLogs/{logId}/hafalanSubmissions/{subId}
     const docRef = doc(db, `users/${selectedSubmission.santriId}/ibadahLogs/${selectedSubmission.ibadahLogId}/hafalanSubmissions`, (selectedSubmission as any).id);
 
     updateDocumentNonBlocking(docRef, {
@@ -88,8 +82,8 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
     });
 
     toast({
-      title: status === 'VERIFIED' ? (bonus ? "Mumtaz!" : "Berhasil") : "Revisi Dikirim",
-      description: status === 'VERIFIED' ? `Hafalan ${selectedSubmission.santriName} disetujui.` : `Catatan revisi dikirim ke ${selectedSubmission.santriName}.`,
+      title: status === 'VERIFIED' ? (bonus ? "Mumtaz!" : "Berhasil Verifikasi") : "Revisi Dikirim",
+      description: status === 'VERIFIED' ? `Hafalan ${selectedSubmission.santriName} telah diverifikasi.` : `Catatan revisi telah dikirim.`,
     });
     
     setSelectedSubmission(null);
@@ -101,13 +95,13 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-headline font-bold">Konsol Pengajar</h2>
-          <p className="text-muted-foreground text-sm">Review setoran santri secara real-time.</p>
+          <p className="text-muted-foreground text-sm">Tinjau semua setoran masuk secara real-time.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="Cari setoran atau santri..." 
+              placeholder="Cari santri atau surat..." 
               className="pl-9 glass-card w-full md:w-[250px] bg-secondary/30"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,40 +118,54 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
-              Setoran Menunggu
+              Total Setoran Masuk
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {submissions?.length || 0}
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Update Otomatis</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-card border-none bg-card/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-accent">
+              <AlertCircle className="w-4 h-4" />
+              Menunggu Review
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
               {submissions?.filter(s => s.status === 'PENDING_REVIEW').length || 0}
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Butuh Review Segera</p>
           </CardContent>
         </Card>
       </div>
 
       <Card className="glass-card border-none bg-card/40">
         <CardHeader>
-          <CardTitle className="text-lg font-headline">Daftar Setoran Masuk</CardTitle>
+          <CardTitle className="text-lg font-headline">Daftar Hafalan Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="py-20 flex flex-col items-center justify-center space-y-4">
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Memuat data setoran...</p>
+              <p className="text-sm text-muted-foreground">Menghubungkan ke database...</p>
             </div>
           ) : filteredSubmissions.length === 0 ? (
             <div className="py-20 text-center space-y-4">
               <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto opacity-30" />
-              <p className="text-muted-foreground">Belum ada setoran masuk untuk direview.</p>
+              <p className="text-muted-foreground italic">Belum ada setoran yang bisa ditampilkan.</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-white/5">
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest">Santri</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Konten Hafalan</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Waktu Kirim</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Hafalan</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Tanggal</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest">Status</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right">Aksi</TableHead>
                 </TableRow>
@@ -165,17 +173,17 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
               <TableBody>
                 {filteredSubmissions.map(sub => (
                   <TableRow key={(sub as any).id} className="border-white/5 hover:bg-white/5 transition-colors">
-                    <TableCell className="font-bold">{sub.santriName || 'Anonim'}</TableCell>
+                    <TableCell className="font-bold">{sub.santriName || 'Santri'}</TableCell>
                     <TableCell className="font-medium text-primary">{sub.hafalanContent}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {new Date(sub.submissionDate).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                      {new Date(sub.submissionDate).toLocaleDateString('id-ID')}
                     </TableCell>
                     <TableCell>
                       <Badge variant={sub.status === 'PENDING_REVIEW' ? 'secondary' : 'default'} className={cn(
                         sub.status === 'PENDING_REVIEW' ? "bg-accent/10 text-accent" : "bg-emerald-500/10 text-emerald-500",
                         "border-none px-2 py-0.5"
                       )}>
-                        {sub.status === 'PENDING_REVIEW' ? 'Menunggu' : 'Selesai'}
+                        {sub.status === 'PENDING_REVIEW' ? 'Pending' : 'Verified'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -202,18 +210,18 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
                           
                           <div className="space-y-8 py-8">
                             <div className="space-y-4">
-                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Kiriman</h4>
+                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Kiriman Santri</h4>
                               <div className="p-8 rounded-[2rem] bg-[#1e212b] border border-white/5 italic text-xl leading-relaxed text-white shadow-inner relative">
                                 {sub.hafalanContent}
                                 <br />
-                                <span className="text-[#10B981] font-bold not-italic mt-4 block text-lg">Setoran Hari: {sub.ibadahLogId}</span>
+                                <span className="text-[#10B981] font-bold not-italic mt-4 block text-lg">Log Date: {sub.ibadahLogId}</span>
                               </div>
                             </div>
                             
                             <div className="space-y-4">
-                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Umpan Balik</h4>
+                              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Umpan Balik Ustadz</h4>
                               <Textarea 
-                                placeholder="Tulis catatan revisi atau penyemangat..."
+                                placeholder="Berikan catatan perbaikan atau pujian..."
                                 value={verificationNote}
                                 onChange={(e) => setVerificationNote(e.target.value)}
                                 className="bg-[#1e212b] border-emerald-500/30 min-h-[140px] rounded-2xl text-lg p-6"
@@ -236,7 +244,7 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
                               onClick={() => handleVerify('VERIFIED')}
                             >
                               <CheckCircle2 className="w-5 h-5 mr-3" />
-                              OK
+                              Cukup
                             </Button>
                             <Button 
                               className="flex-1 bg-[#10B981] text-white font-bold h-16 rounded-2xl shadow-lg"
