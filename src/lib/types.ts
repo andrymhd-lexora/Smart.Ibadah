@@ -13,9 +13,8 @@ export interface UserProfile {
   photoUrl?: string;
   whatsapp?: string;
   participantId?: string;
-  studentId?: string; // For Wali link
-  linkedStudents?: string[]; // For Wali
-  assignedUstadzId?: string; // Teacher assigned to this student
+  linkedStudentIds?: string[]; // Sesuai dengan backend.json
+  assignedUstadzId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -25,10 +24,10 @@ export interface IbadahLog {
   uid: string;
   date: string;
   activities: {
-    prayers: string[]; // List of completed prayer names
+    prayers: string[];
     quranPages: number;
     hafalanText: string;
-    others: string[]; // Daily activities checked
+    others: string[];
     dzikir: boolean;
     murottalMinutes: number;
   };

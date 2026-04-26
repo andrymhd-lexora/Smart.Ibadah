@@ -2,14 +2,14 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
 import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -21,15 +21,9 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Data dari URL hanya digunakan untuk inisialisasi akun baru
+  // Data dari URL hanya digunakan untuk pendaftaran user baru
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
-
-  useEffect(() => {
-    if (!isUserLoading && !authUser) {
-      router.push('/');
-    }
-  }, [isUserLoading, authUser, router]);
 
   const userDocRef = useMemoFirebase(() => {
     if (!db || !authUser) return null;
@@ -38,18 +32,19 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Inisialisasi User Baru (Hanya sekali seumur hidup akun)
+  // Inisialisasi User Baru (Hanya sekali saat registrasi)
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db) {
       const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
-        role: roleFromUrl || 'santri', // Peran dikunci saat pendaftaran
+        role: roleFromUrl || 'santri',
         totalExp: 0,
         streak: 0,
         whatsapp: '',
         participantId: `RTI-${Math.floor(1000 + Math.random() * 9000)}`,
+        linkedStudentIds: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -68,30 +63,33 @@ function DashboardContent() {
     }
   };
 
-  if (isUserLoading || (authUser && isProfileLoading)) return (
+  if (isUserLoading || isProfileLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Memverifikasi Otoritas Pahlawan...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Menghubungkan ke Portal RTI...</p>
       </div>
     </div>
   );
 
-  if (!authUser) return null;
+  if (!authUser) {
+    router.push('/');
+    return null;
+  }
 
-  // Sumber kebenaran peran (Role) adalah dari database (profileData)
-  // User tidak bisa "pindah" dashboard dengan mengganti URL parameter
-  const userRole: UserRole = profileData?.role || roleFromUrl || 'santri';
+  // Sumber kebenaran mutlak peran (Role) adalah dari database
+  const finalRole: UserRole = profileData?.role || roleFromUrl || 'santri';
 
   const finalUser: UserProfile = {
     uid: authUser.uid,
     name: profileData?.name || (nameFromUrl ? decodeURIComponent(nameFromUrl!) : (authUser.displayName || 'Pahlawan')),
     email: profileData?.email || authUser.email || '',
-    role: userRole,
+    role: finalRole,
     totalExp: profileData?.totalExp || 0,
     streak: profileData?.streak || 0,
     whatsapp: profileData?.whatsapp || '',
     participantId: profileData?.participantId || '',
+    linkedStudentIds: profileData?.linkedStudentIds || [],
     photoUrl: profileData?.photoUrl || '',
     school: profileData?.school || '',
     class: profileData?.class || '',
@@ -101,9 +99,9 @@ function DashboardContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <NavHeader user={finalUser} onLogout={handleLogout} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-8">
-        {userRole === 'santri' && <SantriDashboard user={finalUser} />}
-        {userRole === 'ustadz' && <UstadzDashboard user={finalUser} />}
-        {userRole === 'wali' && <WaliDashboard user={finalUser} />}
+        {finalRole === 'santri' && <SantriDashboard user={finalUser} />}
+        {finalRole === 'ustadz' && <UstadzDashboard user={finalUser} />}
+        {finalRole === 'wali' && <WaliDashboard user={finalUser} />}
       </main>
       <Footer />
     </div>
