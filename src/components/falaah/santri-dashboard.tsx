@@ -5,45 +5,30 @@ import { UserProfile, HafalanSubmission } from "@/lib/types";
 import { 
   getRankByExp, 
   getNextRank, 
-  RANKS,
-  PRAYERS_WAJIB,
-  DAILY_IBADAH
+  RANKS
 } from "@/lib/constants";
 import { 
   Trophy,
   BrainCircuit,
   Target,
-  Headphones,
-  BookOpen,
-  ScrollText,
-  HandHeart,
   CheckCircle2,
   LayoutDashboard,
-  Clock,
-  ChevronRight,
   Flame,
-  Star,
-  Play,
-  Pause,
   Mic,
   Square,
-  LayoutGrid,
-  List,
   AlertCircle,
-  Calendar as CalendarIcon,
   Zap,
   Shield,
   Medal,
   Sparkles,
-  Volume2,
   Rocket,
   Sword,
   Crown,
   Bolt,
-  Radio
+  Radio,
+  ScrollText
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -57,12 +42,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { HADITS_LIST, DOA_LIST } from "@/lib/hadits-doa-data";
 import { ALL_SURAHS } from "@/lib/quran-data";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { collection, query } from "firebase/firestore";
 
@@ -72,23 +53,16 @@ interface SantriDashboardProps {
 
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
 
-const QORIS = [
-  { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
-  { id: 'ar.shaatree', name: 'Abu Bakr Al-Shatri' },
-  { id: 'ar.juhany', name: 'Abdullah Al-Juhany' },
-];
-
 export function SantriDashboard({ user }: SantriDashboardProps) {
   const [activeTab, setActiveTab] = useState<SantriTab>('ringkasan');
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
   const db = useFirestore();
 
-  const [selectedQori, setSelectedQori] = useState(QORIS[0]);
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate] = useState<Date>(new Date());
   const dateString = format(selectedDate, 'yyyy-MM-dd');
 
   const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<{name: string, type: 'surah' | 'doa'} | null>(null);
@@ -173,7 +147,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
       expAwarded: 100,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      assignedUstadzId: 'MOCK_USTADZ_ID'
+      assignedUstadzId: user.assignedUstadzId || 'MOCK_USTADZ_ID'
     };
 
     const submissionRef = collection(db, `users/${user.uid}/ibadahLogs/${dateString}/hafalanSubmissions`);
@@ -183,24 +157,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     setSelectedItemForSetoran(null);
     setAudioUrl(null);
     setRecordingTime(0);
-  };
-
-  const togglePlay = (surahNumber: number) => {
-    const surah = ALL_SURAHS.find(s => s.number === surahNumber);
-    if (playingSurah === surahNumber) {
-      audioRef.current?.pause();
-      setPlayingSurah(null);
-    } else {
-      setPlayingSurah(surahNumber);
-      const url = `https://cdn.islamic.network/quran/audio-surah/128/${selectedQori.id}/${surahNumber}.mp3`;
-      if (audioRef.current) {
-        audioRef.current.src = url;
-        audioRef.current.play().catch(() => {
-          setPlayingSurah(null);
-          toast({ variant: "destructive", title: "Gagal", description: "Audio tidak tersedia." });
-        });
-      }
-    }
   };
 
   const navItems = [
@@ -217,7 +173,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     <div className="space-y-8 pb-20 max-w-6xl mx-auto">
       <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
 
-      {/* Heroic Navigation */}
+      {/* Navigation */}
       <Card className="glass-card border-none bg-black/40 overflow-hidden sticky top-20 z-40 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex p-3 gap-3">
@@ -241,10 +197,8 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </ScrollArea>
       </Card>
 
-      {/* Main Content Area */}
       {activeTab === 'ringkasan' && (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-          {/* Superhero Status Profile */}
           <div className="relative p-1 rounded-[2rem] bg-gradient-to-r from-primary via-accent to-destructive animate-gradient-x">
             <Card className="glass-card border-none bg-[#0f172a] rounded-[1.9rem] overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -294,19 +248,18 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                     />
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
 
-          {/* AI Intelligence Hub */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="md:col-span-2 glass-card border-none bg-card/40 relative overflow-hidden group">
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-primary text-lg font-black uppercase tracking-wider">
+                <div className="flex items-center gap-3 text-primary text-lg font-black uppercase tracking-wider">
                   <div className="p-2 bg-primary/20 rounded-lg"><BrainCircuit className="w-6 h-6" /></div>
                   Pusat Intelijen Ustadz AI
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="p-6 rounded-2xl bg-black/40 border border-white/5 relative">
@@ -328,7 +281,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
             </Card>
           </div>
 
-          {/* Daily Missions Grid */}
           <div className="space-y-4">
             <h3 className="text-xl font-black uppercase tracking-[0.2em] px-2 flex items-center gap-2">
               <Target className="w-5 h-5 text-destructive" /> Misi Harian Anda
@@ -350,7 +302,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {/* Tab Tahfidz: Heroic Submission */}
       {activeTab === 'tahfidz' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
           <div className="relative p-1 rounded-3xl bg-gradient-to-r from-emerald-500 to-blue-600">
@@ -364,9 +315,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                   <p className="text-muted-foreground">Kirimkan kekuatan ayatmu ke Markas Besar.</p>
                 </div>
               </div>
-              <Button size="lg" className="bg-primary text-white font-black px-10 h-16 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                SETORAN BARU
-              </Button>
             </div>
           </div>
 
@@ -385,10 +333,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                         <h4 className="text-xl font-black text-white">{surah.name}</h4>
                       </div>
                       <span className="text-3xl font-headline text-white/20 group-hover:text-primary/40 transition-colors">{surah.arabicName}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-6">
-                      <Badge variant="secondary" className="bg-white/5 border-none text-[10px] uppercase font-bold">{surah.totalVerses} AYAT</Badge>
-                      <Badge variant="secondary" className="bg-white/5 border-none text-[10px] uppercase font-bold">{surah.revelationType}</Badge>
                     </div>
                     <Button 
                       className={cn(
@@ -411,11 +355,9 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {/* Tab Rank: Hall of Heroes (The Centerpiece) */}
       {activeTab === 'rank' && (
         <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
           <div className="relative py-24 overflow-hidden rounded-[3rem] bg-[#020617] border-4 border-primary/30 shadow-[0_0_80px_rgba(16,185,129,0.2)]">
-            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/bg-hero/1200/800')] opacity-5 mix-blend-overlay"></div>
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.25)_0%,transparent_75%)]"></div>
             
             <div className="relative flex flex-col items-center text-center space-y-10">
@@ -447,62 +389,33 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                     style={{ width: `${expProgress}%` }}
                   />
                 </div>
-                <p className="text-sm font-bold text-white/50 tracking-widest">BUTUH {expNeeded.toLocaleString()} EXP LAGI UNTUK EVOLUSI</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
-            <h3 className="text-3xl font-headline font-black text-center uppercase tracking-widest text-white">
-              GALERI <span className="text-primary">LEGENDARI</span>
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
-              {RANKS.map((r, i) => {
-                const isReached = user.totalExp >= r.minExp;
-                return (
-                  <div key={i} className={cn(
-                    "relative p-6 rounded-[2rem] text-center border-4 transition-all duration-500 hover:scale-110",
-                    isReached 
-                      ? "bg-primary/10 border-primary shadow-[0_0_25px_rgba(16,185,129,0.3)]" 
-                      : "bg-black/40 border-white/5 opacity-30 grayscale"
-                  )}>
-                    <div className="text-5xl mb-4 drop-shadow-md">{r.icon}</div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-white">{r.name}</div>
-                    {!isReached && <Shield className="w-5 h-5 absolute top-4 right-4 text-white/20" />}
-                    {isReached && <Medal className="w-5 h-5 absolute top-4 right-4 text-primary animate-bounce" />}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Achievement Badges */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { title: 'MAHA GURU DOA', desc: 'Menghafal 50 doa tanpa cela.', icon: <Zap className="w-10 h-10 text-yellow-500" /> },
-              { title: 'PENJAGA HADITS', desc: 'Arsip 20 Hadits Arbain.', icon: <Shield className="w-10 h-10 text-blue-500" /> },
-              { title: 'MASTER MUROTTAL', desc: '100 Jam mendengarkan Al-Quran.', icon: <Sparkles className="w-10 h-10 text-purple-500" /> }
-            ].map((ach, i) => (
-              <Card key={i} className="glass-card border-none bg-card/40 overflow-hidden group hover:bg-card/60 transition-all">
-                <CardContent className="p-8 flex items-center gap-6">
-                  <div className="p-5 rounded-3xl bg-black/40 border border-white/5 group-hover:scale-110 transition-transform duration-500">
-                    {ach.icon}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-lg uppercase tracking-tight text-white">{ach.title}</h4>
-                    <p className="text-xs text-muted-foreground">{ach.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
+            {RANKS.map((r, i) => {
+              const isReached = user.totalExp >= r.minExp;
+              return (
+                <div key={i} className={cn(
+                  "relative p-6 rounded-[2rem] text-center border-4 transition-all duration-500 hover:scale-110",
+                  isReached 
+                    ? "bg-primary/10 border-primary shadow-[0_0_25px_rgba(16,185,129,0.3)]" 
+                    : "bg-black/40 border-white/5 opacity-30 grayscale"
+                )}>
+                  <div className="text-5xl mb-4 drop-shadow-md">{r.icon}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-white">{r.name}</div>
+                  {isReached ? <Medal className="w-5 h-5 absolute top-4 right-4 text-primary animate-bounce" /> : <Shield className="w-5 h-5 absolute top-4 right-4 text-white/20" />}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Common UI Elements: Recording Dialog & Tab Fallbacks */}
+      {/* Fallback for other tabs */}
       {!['ringkasan', 'tahfidz', 'rank'].includes(activeTab) && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-           {/* Fallback for other tabs - simplify styling for now while keeping hero vibe */}
            <Card className="glass-card border-none bg-card/40 p-12 text-center space-y-6">
               <AlertCircle className="w-20 h-20 text-muted-foreground mx-auto" />
               <h3 className="text-2xl font-black uppercase">Area Intelijen {activeTab}</h3>
@@ -512,7 +425,7 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
         </div>
       )}
 
-      {/* Heroic Recording Dialog */}
+      {/* Recording Dialog */}
       <Dialog open={!!selectedItemForSetoran} onOpenChange={() => !isRecording && setSelectedItemForSetoran(null)}>
         <DialogContent className="glass-card sm:max-w-md border-primary/20 bg-[#0f172a] rounded-[2rem] p-8">
           <DialogHeader>
@@ -526,38 +439,25 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
               "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500",
               isRecording ? "bg-red-500 hero-glow scale-110 shadow-[0_0_40px_rgba(239,68,68,0.5)]" : "bg-primary/20 border-2 border-primary/30"
             )}>
-              {isRecording ? (
-                <Square className="w-10 h-10 text-white fill-current animate-pulse" />
-              ) : (
-                <Mic className="w-12 h-12 text-primary" />
-              )}
+              {isRecording ? <Square className="w-10 h-10 text-white fill-current animate-pulse" /> : <Mic className="w-12 h-12 text-primary" />}
             </div>
             <div className="text-5xl font-mono font-black text-white tracking-widest bg-black/40 px-6 py-2 rounded-xl border border-white/5">
               {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
             </div>
-            {audioUrl && !isRecording && (
-              <audio src={audioUrl} controls className="w-full opacity-80" />
-            )}
+            {audioUrl && !isRecording && <audio src={audioUrl} controls className="w-full opacity-80" />}
           </div>
           <DialogFooter className="flex-row gap-4">
             {!audioUrl ? (
               <Button 
-                className={cn(
-                  "flex-1 h-16 font-black uppercase tracking-widest text-lg rounded-2xl transition-all",
-                  isRecording ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:scale-105"
-                )} 
+                className={cn("flex-1 h-16 font-black uppercase tracking-widest text-lg rounded-2xl", isRecording ? "bg-red-600 hover:bg-red-700" : "bg-primary")} 
                 onClick={isRecording ? stopRecording : startRecording}
               >
                 {isRecording ? "HENTIKAN" : "MULAI REKAM"}
               </Button>
             ) : (
               <>
-                <Button variant="outline" className="flex-1 h-16 font-black uppercase tracking-widest rounded-2xl border-white/10 hover:bg-white/5" onClick={() => setAudioUrl(null)}>
-                  ULANGI
-                </Button>
-                <Button className="flex-1 h-16 bg-gradient-to-r from-primary to-emerald-600 font-black uppercase tracking-widest text-lg rounded-2xl shadow-xl shadow-primary/20" onClick={sendRecording}>
-                  KIRIM MISI
-                </Button>
+                <Button variant="outline" className="flex-1 h-16 font-black rounded-2xl" onClick={() => setAudioUrl(null)}>ULANGI</Button>
+                <Button className="flex-1 h-16 bg-primary font-black rounded-2xl" onClick={sendRecording}>KIRIM MISI</Button>
               </>
             )}
           </DialogFooter>
