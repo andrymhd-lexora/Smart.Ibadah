@@ -2,8 +2,8 @@
 "use client"
 
 import { useState, Suspense, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { UserProfile, UserRole } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { Footer } from "@/components/falaah/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,7 +21,6 @@ import { signOut } from "firebase/auth";
 function ProfileContent() {
   const { user: authUser, isUserLoading } = useUser();
   const auth = useAuth();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const db = useFirestore();
   
@@ -61,8 +60,8 @@ function ProfileContent() {
     if (!authUser || !db || !profileData) {
       toast({
         variant: "destructive",
-        title: "Gagal Menyimpan",
-        description: "Data profil belum termuat sempurna.",
+        title: "Gagal Sinkronisasi",
+        description: "Data pahlawan belum siap.",
       });
       return;
     }
@@ -70,7 +69,7 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Peran (Role) di database tidak boleh diubah oleh user
+    // PERAN (ROLE) DI DATABASE TIDAK BOLEH DIUBAH USER
     const updatedData = {
       ...formData,
       uid: authUser.uid,
@@ -78,23 +77,22 @@ function ProfileContent() {
       updatedAt: new Date().toISOString()
     };
 
-    // Menggunakan setDocumentNonBlocking dengan merge: true agar lebih andal
+    // Gunakan Set & Merge untuk keamanan data tertinggi
     setDocumentNonBlocking(docRef, updatedData, { merge: true });
 
     setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Identitas Disinkronkan",
-        description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
+        title: "SINKRONISASI BERHASIL",
+        description: "Identitas baru Anda telah diperbarui di seluruh Markas.",
       });
-      // Redirect ke dashboard untuk melihat perubahan
-      router.push(`/dashboard?role=${profileData.role}`);
-    }, 1000);
+      router.push(`/dashboard`);
+    }, 1200);
   };
 
   const handlePhotoUpload = () => {
     if (!authUser || !db) return;
-    const mockPhotoUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 1000)}/400/400`;
+    const mockPhotoUrl = `https://picsum.photos/seed/${authUser.uid}/400/400`;
     setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
     
     const docRef = doc(db, 'users', authUser.uid);
@@ -105,7 +103,7 @@ function ProfileContent() {
 
     toast({
       title: "Citra Diperbarui",
-      description: "Menghubungkan citra baru ke profil spiritual Anda...",
+      description: "Menghubungkan citra spiritual baru ke profil...",
     });
   };
 
@@ -113,16 +111,17 @@ function ProfileContent() {
     try {
       await signOut(auth);
       router.push('/');
+      toast({ title: "Berhasil Keluar", description: "Sesi Markas Besar telah diakhiri." });
     } catch (error) {
       console.error("Gagal keluar:", error);
     }
   };
 
   if (isUserLoading || (authUser && isProfileLoading)) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Mengakses data pahlawan...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Mengambil Arsip Pahlawan...</p>
       </div>
     </div>
   );
@@ -130,8 +129,8 @@ function ProfileContent() {
   if (!authUser) return null;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <NavHeader user={(profileData || { ...formData, role: 'santri', totalExp: 0, streak: 0 }) as any} onLogout={handleLogout} />
+    <div className="min-h-screen bg-[#0a0a0c] flex flex-col">
+      <NavHeader user={(profileData || { ...formData, role: 'santri', totalExp: 0, streak: 1 }) as any} onLogout={handleLogout} />
       
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-12 md:px-8">
         <div className="mb-8 flex items-center justify-between">
@@ -141,29 +140,30 @@ function ProfileContent() {
             onClick={() => router.push(`/dashboard`)}
           >
             <ArrowLeft className="w-4 h-4" />
-            Kembali ke Markas
+            Kembali ke Markas Utama
           </Button>
-          <div className="flex items-center gap-2 text-accent animate-pulse">
-            <Sparkles className="w-5 h-5" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Editor Pahlawan Aktif</span>
+          <div className="flex items-center gap-2 text-accent">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Identitas Terverifikasi</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="glass-card border-none bg-card/40 shadow-2xl h-fit overflow-hidden">
-            <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30"></div>
+          {/* Card Kiri: Foto & Status Singkat */}
+          <Card className="glass-card border-none bg-card/40 shadow-2xl h-fit overflow-hidden rounded-[2rem]">
+            <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30 shimmer-effect"></div>
             <CardContent className="p-8 text-center space-y-6 -mt-16">
               <div className="relative mx-auto w-40 h-40 group">
                 <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse group-hover:bg-primary/40 transition-all"></div>
-                <Avatar className="w-40 h-40 border-4 border-background shadow-2xl relative z-10 transition-transform group-hover:scale-105 duration-500">
+                <Avatar className="w-40 h-40 border-4 border-[#0a0a0c] shadow-2xl relative z-10 transition-transform group-hover:scale-105 duration-500">
                   <AvatarImage src={formData.photoUrl} className="object-cover" />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-emerald-800 text-white text-5xl font-black">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-emerald-900 text-white text-5xl font-black">
                     {(formData.name || 'P').charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <Button 
                   size="icon" 
-                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-background z-20 hover:scale-110 transition-all"
+                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-[#0a0a0c] z-20 hover:scale-110 transition-all"
                   onClick={handlePhotoUpload}
                 >
                   <Camera className="w-5 h-5" />
@@ -171,59 +171,60 @@ function ProfileContent() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Pahlawan'}</h2>
-                <Badge variant="secondary" className="bg-primary/20 text-primary uppercase font-black text-[10px] px-4 py-1 flex items-center gap-1 mx-auto w-fit">
+                <Badge variant="secondary" className="bg-primary/20 text-primary uppercase font-black text-[10px] px-6 py-1.5 flex items-center gap-1 mx-auto w-fit rounded-full border border-primary/20">
                   <Shield className="w-3 h-3" />
                   {profileData?.role?.toUpperCase() || 'SANTRI'}
                 </Badge>
               </div>
               <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <p className="text-[10px] font-black text-white/40 uppercase">Power Level</p>
+                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Power Level</p>
                   <p className="text-xl font-black text-accent">{profileData?.totalExp?.toLocaleString() || 0}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] font-black text-white/40 uppercase">Misi Aktif</p>
-                  <p className="text-xl font-black text-primary">{profileData?.streak || 0} Hari</p>
+                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Streak Misi</p>
+                  <p className="text-xl font-black text-primary">{profileData?.streak || 0} HARI</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl">
+          {/* Card Kanan: Form Editor Identitas */}
+          <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl rounded-[2rem]">
             <CardHeader className="border-b border-white/5 pb-8">
-              <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Identitas Pahlawan</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Sesuaikan detail biodata Anda di Rumah Tahfidz Ikhsan</CardDescription>
+              <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Detail Identitas Pahlawan</CardTitle>
+              <CardDescription className="text-muted-foreground font-medium">Sinkronkan data spiritual dan administrasi Anda di RTI.</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8 pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <Label htmlFor="name" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nama Lengkap</Label>
+                  <Label htmlFor="name" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nama Lengkap (Identitas Utama)</Label>
                   <Input 
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary focus:ring-primary/20 transition-all text-lg"
-                    placeholder="Masukkan nama pahlawan"
+                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary focus:ring-primary/10 transition-all text-lg"
+                    placeholder="Masukkan nama Anda"
                   />
                 </div>
                 
                 <div className="space-y-3">
-                  <Label htmlFor="participantId" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nomor Peserta (ID)</Label>
+                  <Label htmlFor="participantId" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor Peserta (ID Unik)</Label>
                   <div className="relative">
                     <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                     <Input 
                       id="participantId" 
                       value={formData.participantId} 
                       onChange={(e) => setFormData({...formData, participantId: e.target.value})}
-                      className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
+                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
                       placeholder="Contoh: RTI-1234"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Email Terdaftar</Label>
+                  <Label htmlFor="email" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Email Markas (Terkunci)</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     <Input 
@@ -236,45 +237,45 @@ function ProfileContent() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="whatsapp" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Nomor WhatsApp</Label>
+                  <Label htmlFor="whatsapp" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor WhatsApp (Aktif)</Label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                     <Input 
                       id="whatsapp" 
                       value={formData.whatsapp} 
                       onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                      className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
+                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
                       placeholder="Contoh: 0812..."
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="school" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Asal Sekolah</Label>
+                  <Label htmlFor="school" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Institusi / Asal Sekolah</Label>
                   <Input 
                     id="school" 
                     placeholder="Contoh: SMP IT Ikhsan"
                     value={formData.school} 
                     onChange={(e) => setFormData({...formData, school: e.target.value})}
-                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold text-lg"
+                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold text-lg"
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="class" className="text-xs font-black uppercase text-white/50 tracking-widest ml-1">Kelas / Skuad</Label>
+                  <Label htmlFor="class" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Kelas / Skuad Operasional</Label>
                   <Input 
                     id="class" 
-                    placeholder="Contoh: 9A"
+                    placeholder="Contoh: 9A atau Squad 01"
                     value={formData.class} 
                     onChange={(e) => setFormData({...formData, class: e.target.value})}
-                    className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold text-lg"
+                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold text-lg"
                   />
                 </div>
               </div>
 
               <div className="pt-10 border-t border-white/5">
                 <Button 
-                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all text-xl uppercase"
+                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all text-xl uppercase tracking-widest"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -286,7 +287,7 @@ function ProfileContent() {
                   ) : (
                     <>
                       <Save className="w-8 h-8" />
-                      SIMPAN IDENTITAS
+                      SIMPAN PERUBAHAN IDENTITAS
                     </>
                   )}
                 </Button>
@@ -303,7 +304,7 @@ function ProfileContent() {
 export default function ProfilePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     }>

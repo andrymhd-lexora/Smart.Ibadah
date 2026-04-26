@@ -59,25 +59,27 @@ export default function LandingPage() {
           toast({
             variant: "destructive",
             title: "Nama Diperlukan",
-            description: "Masukkan nama pahlawan Anda untuk pendaftaran.",
+            description: "Masukkan nama Anda untuk pendaftaran pahlawan baru.",
           });
           setIsLoadingAction(false);
           return;
         }
+        // Proses Pendaftaran
         await createUserWithEmailAndPassword(auth, email, password);
         toast({
-          title: "Pendaftaran Berhasil",
-          description: "Identitas pahlawan Anda telah didaftarkan!",
+          title: "Inisialisasi Berhasil",
+          description: "Identitas pahlawan Anda sedang didaftarkan ke sistem.",
         });
       } else {
+        // Proses Login
         await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: "Akses Diterima",
-          description: "Selamat datang kembali di Markas Besar.",
+          description: "Membuka pintu Markas Besar...",
         });
       }
 
-      // Redirect akan ditangani oleh useEffect authStateChanged di dashboard
+      // Kirim parameter role sebagai hint untuk inisialisasi awal di dashboard
       const query = `?role=${role}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
       router.push(`/dashboard${query}`);
     } catch (error: any) {
@@ -86,11 +88,10 @@ export default function LandingPage() {
       if (error.code === 'auth/invalid-credential') {
         message = "Email atau kata sandi salah. Silakan periksa kembali.";
       } else if (error.code === 'auth/email-already-in-use') {
-        message = "Email ini sudah terdaftar sebagai pahlawan lain.";
+        message = "Email ini sudah terdaftar. Silakan pilih mode MASUK.";
+        setMode("login");
       } else if (error.code === 'auth/weak-password') {
-        message = "Kata sandi terlalu lemah. Gunakan minimal 6 karakter.";
-      } else if (error.code === 'auth/user-not-found') {
-        message = "Identitas tidak ditemukan. Silakan daftar akun baru.";
+        message = "Kata sandi terlalu lemah. Minimal 6 karakter.";
       }
 
       toast({
@@ -111,7 +112,7 @@ export default function LandingPage() {
       toast({
         variant: "destructive",
         title: "Gagal Masuk Tamu",
-        description: "Tidak dapat mengakses portal tamu saat ini.",
+        description: "Portal tamu sedang dalam pemeliharaan.",
       });
       setIsLoadingAction(false);
     }
@@ -124,77 +125,78 @@ export default function LandingPage() {
   );
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full -z-10"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full -z-10"></div>
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-[#0a0a0c]">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full -z-10 animate-pulse [animation-delay:1s]"></div>
 
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-8">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-[0.2em]">
               <Flame className="w-3 h-3 fill-current" />
               Portal Peradaban Al-Quran
             </div>
-            <h1 className="text-5xl md:text-7xl font-headline font-bold leading-[0.9] tracking-tighter">
+            <h1 className="text-5xl md:text-7xl font-headline font-black leading-[0.9] tracking-tighter text-white">
               Falaah <span className="text-primary italic text-3xl md:text-5xl">v.1.0</span>
               <br />
               Markas <br />
               <span className="text-accent">Pahlawan.</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
-              Tempat di mana setiap ayat yang dihafal menjadi kekuatan, dan setiap ibadah menjadi langkah menuju kejayaan.
+              Jelajahi setiap ayat, kumpulkan EXP spiritual, dan jadilah pahlawan peradaban yang beradab dan taat.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-bold">
               <CheckCircle2 className="w-4 h-4 text-primary" />
-              Sistem Power Level
+              Sistem Level Heroik
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-bold">
               <CheckCircle2 className="w-4 h-4 text-primary" />
-              Verifikasi Ustadz Epik
+              Database Firestore Terenkripsi
             </div>
           </div>
         </div>
 
         <div className="w-full max-w-md mx-auto">
-          <Card className="glass-card shadow-2xl border-white/10">
-            <CardHeader>
-              <CardTitle className="text-2xl font-headline uppercase tracking-tighter flex items-center gap-2">
+          <Card className="glass-card shadow-2xl border-white/10 bg-card/40 backdrop-blur-xl">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-headline uppercase tracking-tighter flex items-center justify-center gap-2 text-white">
                 <Sparkles className="w-6 h-6 text-accent" />
-                {mode === "login" ? "Otorisasi Pahlawan" : "Inisialisasi Pahlawan"}
+                {mode === "login" ? "Otorisasi Masuk" : "Daftar Pahlawan Baru"}
               </CardTitle>
-              <CardDescription>
-                {mode === "login" ? "Masuk ke markas operasional Anda" : "Daftarkan identitas baru di sistem RTI"}
+              <CardDescription className="font-medium">
+                {mode === "login" ? "Selamat datang kembali, Pahlawan!" : "Mulai perjalanan spiritual epik Anda di sini."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs defaultValue="santri" className="w-full" onValueChange={(v) => setRole(v as UserRole)}>
-                <TabsList className="grid grid-cols-3 w-full mb-6 bg-secondary/50">
-                  <TabsTrigger value="santri">Santri</TabsTrigger>
-                  <TabsTrigger value="ustadz">Ustadz</TabsTrigger>
-                  <TabsTrigger value="wali">Wali</TabsTrigger>
+                <TabsList className="grid grid-cols-3 w-full mb-6 bg-secondary/50 p-1 rounded-xl">
+                  <TabsTrigger value="santri" className="rounded-lg font-black uppercase text-[10px] tracking-widest">Santri</TabsTrigger>
+                  <TabsTrigger value="ustadz" className="rounded-lg font-black uppercase text-[10px] tracking-widest">Ustadz</TabsTrigger>
+                  <TabsTrigger value="wali" className="rounded-lg font-black uppercase text-[10px] tracking-widest">Wali</TabsTrigger>
                 </TabsList>
 
                 <div className="space-y-4">
                   {mode === "register" && (
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nama Lengkap Pahlawan</Label>
-                      <Input id="name" placeholder="Contoh: Ahmad Faiz" className="bg-secondary/30" value={name} onChange={e => setName(e.target.value)} />
+                      <Label htmlFor="name" className="text-[10px] font-black uppercase text-white/50 ml-1">Nama Lengkap</Label>
+                      <Input id="name" placeholder="Contoh: Ahmad Faiz" className="h-12 bg-secondary/30 border-white/5 focus:border-primary" value={name} onChange={e => setName(e.target.value)} />
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Portal</Label>
-                    <Input id="email" type="email" placeholder="pahlawan@falaah.id" className="bg-secondary/30" value={email} onChange={e => setEmail(e.target.value)} />
+                    <Label htmlFor="email" className="text-[10px] font-black uppercase text-white/50 ml-1">Email Markas</Label>
+                    <Input id="email" type="email" placeholder="pahlawan@falaah.id" className="h-12 bg-secondary/30 border-white/5 focus:border-primary" value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Kata Sandi</Label>
-                    <Input id="password" type="password" placeholder="••••••••" className="bg-secondary/30" value={password} onChange={e => setPassword(e.target.value)} />
+                    <Label htmlFor="password" className="text-[10px] font-black uppercase text-white/50 ml-1">Kode Akses (Password)</Label>
+                    <Input id="password" type="password" placeholder="••••••••" className="h-12 bg-secondary/30 border-white/5 focus:border-primary" value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
                   
                   <Button 
-                    className="w-full bg-primary hover:bg-emerald-600 text-white font-black h-14 mt-4 uppercase tracking-widest text-lg rounded-2xl shadow-lg shadow-primary/20 transition-all disabled:opacity-50" 
+                    className="w-full bg-primary hover:bg-emerald-600 text-white font-black h-14 mt-6 uppercase tracking-widest text-lg rounded-2xl shadow-lg shadow-primary/20 transition-all disabled:opacity-50" 
                     onClick={handleAction}
                     disabled={isLoadingAction}
                   >
@@ -203,31 +205,31 @@ export default function LandingPage() {
                     ) : (
                       <>
                         {mode === "login" ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />}
-                        {mode === "login" ? "MASUK MARKAS" : "DAFTAR SEKARANG"}
+                        {mode === "login" ? "MASUK MARKAS" : "GABUNG SEKARANG"}
                       </>
                     )}
                   </Button>
 
                   <div className="relative py-4">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#12141c] px-2 text-muted-foreground">Akses Cepat</span></div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-[#12141c] px-2 text-muted-foreground tracking-[0.3em]">Mode Tamu</span></div>
                   </div>
 
                   <Button 
                     variant="ghost" 
-                    className="w-full text-white/50 hover:text-white hover:bg-white/5" 
+                    className="w-full text-white/30 hover:text-white hover:bg-white/5 rounded-xl h-12 uppercase font-black text-[10px] tracking-widest" 
                     onClick={() => handleAnonymous(role)}
                     disabled={isLoadingAction}
                   >
-                    Masuk Sebagai Tamu
+                    Masuk Sebagai Tamu Sementara
                   </Button>
 
-                  <div className="text-center pt-2">
+                  <div className="text-center pt-4">
                     <button 
-                      className="text-primary font-bold hover:underline text-sm"
+                      className="text-primary font-black hover:underline text-xs uppercase tracking-widest"
                       onClick={() => setMode(mode === "login" ? "register" : "login")}
                     >
-                      {mode === "login" ? "Belum punya akun? Daftar di sini" : "Sudah punya akun? Masuk di sini"}
+                      {mode === "login" ? "Belum punya identitas? Daftar" : "Sudah terdaftar? Masuk Markas"}
                     </button>
                   </div>
                 </div>
