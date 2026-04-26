@@ -21,7 +21,7 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Data dari URL (hanya untuk inisialisasi pertama kali)
+  // Data dari URL hanya digunakan untuk inisialisasi akun baru
   const roleFromUrl = searchParams.get('role') as UserRole;
   const nameFromUrl = searchParams.get('name');
 
@@ -38,14 +38,14 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Inisialisasi User Baru jika belum ada di Firestore
+  // Inisialisasi User Baru (Hanya sekali seumur hidup akun)
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db) {
       const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
-        role: roleFromUrl || 'santri',
+        role: roleFromUrl || 'santri', // Peran dikunci saat pendaftaran
         totalExp: 0,
         streak: 0,
         whatsapp: '',
@@ -72,19 +72,22 @@ function DashboardContent() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Mengakses Markas Pahlawan...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Memverifikasi Otoritas Pahlawan...</p>
       </div>
     </div>
   );
 
   if (!authUser) return null;
 
-  // Nama diprioritaskan dari profileData agar sinkron dengan Firestore
+  // Sumber kebenaran peran (Role) adalah dari database (profileData)
+  // User tidak bisa "pindah" dashboard dengan mengganti URL parameter
+  const userRole: UserRole = profileData?.role || roleFromUrl || 'santri';
+
   const finalUser: UserProfile = {
     uid: authUser.uid,
     name: profileData?.name || (nameFromUrl ? decodeURIComponent(nameFromUrl!) : (authUser.displayName || 'Pahlawan')),
     email: profileData?.email || authUser.email || '',
-    role: profileData?.role || roleFromUrl || 'santri',
+    role: userRole,
     totalExp: profileData?.totalExp || 0,
     streak: profileData?.streak || 0,
     whatsapp: profileData?.whatsapp || '',
@@ -98,9 +101,9 @@ function DashboardContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <NavHeader user={finalUser} onLogout={handleLogout} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-8">
-        {finalUser.role === 'santri' && <SantriDashboard user={finalUser} />}
-        {finalUser.role === 'ustadz' && <UstadzDashboard user={finalUser} />}
-        {finalUser.role === 'wali' && <WaliDashboard user={finalUser} />}
+        {userRole === 'santri' && <SantriDashboard user={finalUser} />}
+        {userRole === 'ustadz' && <UstadzDashboard user={finalUser} />}
+        {userRole === 'wali' && <WaliDashboard user={finalUser} />}
       </main>
       <Footer />
     </div>

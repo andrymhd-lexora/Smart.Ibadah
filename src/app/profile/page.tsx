@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles } from "lucide-react";
+import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles, Shield } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -24,7 +24,6 @@ function ProfileContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const db = useFirestore();
-  const roleFromUrl = (searchParams.get('role') as UserRole) || 'santri';
   
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     name: '',
@@ -59,14 +58,16 @@ function ProfileContent() {
   }, [profileData, authUser]);
 
   const handleSave = () => {
-    if (!authUser || !db) return;
+    if (!authUser || !db || !profileData) return;
     
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
+    // Role TIDAK BOLEH diubah di sini
     const updatedData = {
       ...formData,
       uid: authUser.uid,
+      role: profileData.role, // Memastikan role tetap sesuai database
       updatedAt: new Date().toISOString()
     };
 
@@ -120,14 +121,14 @@ function ProfileContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <NavHeader user={(profileData || { ...formData, role: roleFromUrl, totalExp: 0, streak: 0 }) as any} onLogout={handleLogout} />
+      <NavHeader user={(profileData || { ...formData, role: 'santri', totalExp: 0, streak: 0 }) as any} onLogout={handleLogout} />
       
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-12 md:px-8">
         <div className="mb-8 flex items-center justify-between">
           <Button 
             variant="ghost" 
             className="gap-2 text-muted-foreground hover:text-white transition-colors"
-            onClick={() => router.push(`/dashboard?role=${profileData?.role || roleFromUrl}`)}
+            onClick={() => router.push(`/dashboard`)}
           >
             <ArrowLeft className="w-4 h-4" />
             Kembali ke Markas
@@ -160,8 +161,9 @@ function ProfileContent() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Pahlawan'}</h2>
-                <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4 py-1">
-                  {profileData?.role || roleFromUrl}
+                <Badge variant="secondary" className="bg-primary/20 text-primary uppercase font-black text-[10px] px-4 py-1 flex items-center gap-1 mx-auto w-fit">
+                  <Shield className="w-3 h-3" />
+                  {profileData?.role || 'SANTRI'}
                 </Badge>
               </div>
               <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
