@@ -39,7 +39,10 @@ import {
   History,
   Clock,
   Search,
-  UserCheck
+  UserCheck,
+  Plus,
+  Minus,
+  MessageSquare
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -244,6 +247,37 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     });
   };
 
+  const updateMurottalMinutes = (minutes: number) => {
+    if (!db || !user.uid) return;
+    
+    const oldMinutes = ibadahLog?.activities?.murottalMinutes || 0;
+    const expChange = (minutes - oldMinutes) * 10; // 10 EXP per menit murottal
+
+    const newLog: Partial<IbadahLog> = {
+      uid: user.uid,
+      date: dateString,
+      activities: {
+        ...(ibadahLog?.activities || { prayers: [], quranPages: 0, hafalanText: '', others: [], dzikir: false, murottalMinutes: 0 }),
+        murottalMinutes: minutes
+      },
+      awardedExp: (ibadahLog?.awardedExp || 0) + expChange,
+      updatedAt: new Date().toISOString()
+    };
+
+    setDocumentNonBlocking(logDocRef!, newLog, { merge: true });
+    
+    const userRef = doc(db, 'users', user.uid);
+    setDocumentNonBlocking(userRef, { 
+      totalExp: user.totalExp + expChange,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    toast({
+      title: "Progres Diperbarui",
+      description: `Waktu murottal kini: ${minutes} menit. (+${expChange} EXP)`,
+    });
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -311,6 +345,10 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     s.name.toLowerCase().includes(murottalSearch.toLowerCase()) || 
     s.number.toString() === murottalSearch
   );
+
+  const haditsSubmissions = todaySubmissions?.filter(s => s.hafalanContent.includes('(HADITS)')) || [];
+  const doaSubmissions = todaySubmissions?.filter(s => s.hafalanContent.includes('(DOA)')) || [];
+  const surahSubmissions = todaySubmissions?.filter(s => s.hafalanContent.includes('(SURAH)')) || [];
 
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto">
@@ -752,6 +790,52 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
               </Card>
 
               <div className="space-y-8">
+                {/* Laporan Literasi & Audio */}
+                <Card className="glass-card border-none bg-card/40">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-white uppercase tracking-wider">
+                      <Radio className="w-5 h-5 text-emerald-400" /> Literasi & Audio
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="p-5 rounded-2xl bg-black/20 border border-white/5 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-white/70">Waktu Murottal</span>
+                        <div className="flex items-center gap-3">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 rounded-lg bg-white/5"
+                            onClick={() => updateMurottalMinutes(Math.max(0, (ibadahLog?.activities?.murottalMinutes || 0) - 5))}
+                          ><Minus className="w-4 h-4" /></Button>
+                          <span className="text-xl font-black text-primary">{ibadahLog?.activities?.murottalMinutes || 0}m</span>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 rounded-lg bg-white/5"
+                            onClick={() => updateMurottalMinutes((ibadahLog?.activities?.murottalMinutes || 0) + 5)}
+                          ><Plus className="w-4 h-4" /></Button>
+                        </div>
+                      </div>
+                      <Progress value={Math.min(100, ((ibadahLog?.activities?.murottalMinutes || 0) / 30) * 100)} className="h-2" />
+                      <p className="text-[10px] text-white/30 uppercase tracking-widest text-center">Target Harian: 30 Menit (+300 EXP)</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center space-y-2">
+                        <ScrollText className="w-6 h-6 text-primary mx-auto" />
+                        <div className="text-2xl font-black text-white">{haditsSubmissions.length}</div>
+                        <div className="text-[10px] font-black uppercase text-white/40">Hadits Terkirim</div>
+                      </div>
+                      <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center space-y-2">
+                        <Zap className="w-6 h-6 text-accent mx-auto" />
+                        <div className="text-2xl font-black text-white">{doaSubmissions.length}</div>
+                        <div className="text-[10px] font-black uppercase text-white/40">Doa Terkirim</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="glass-card border-none bg-card/40">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-white uppercase tracking-wider">
@@ -784,21 +868,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
                       );
                     })}
                   </CardContent>
-                </Card>
-
-                <Card className="glass-card border-none bg-card/40 p-8 flex flex-col items-center justify-center text-center space-y-6">
-                   <div className="w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary">
-                      <Clock className="w-10 h-10" />
-                   </div>
-                   <div className="space-y-2">
-                     <h3 className="text-xl font-black text-white uppercase">Konsistensi Pahlawan</h3>
-                     <p className="text-sm text-muted-foreground">Pertahankan streakmu selama 7 hari untuk membuka hadiah misterius!</p>
-                   </div>
-                   <div className="w-full flex justify-center gap-2">
-                     {[1,2,3,4,5,6,7].map(i => (
-                       <div key={i} className={cn("w-3 h-3 rounded-full", user.streak >= i ? "bg-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-white/10")}></div>
-                     ))}
-                   </div>
                 </Card>
               </div>
            </div>
