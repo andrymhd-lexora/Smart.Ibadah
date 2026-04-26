@@ -9,7 +9,7 @@ import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
 import { Loader2 } from "lucide-react";
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 
 function DashboardContent() {
@@ -35,6 +35,25 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
+  // Inisialisasi profil di Firestore jika belum ada (khusus untuk prototype)
+  useEffect(() => {
+    if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
+      const newUser: UserProfile = {
+        uid: authUser.uid,
+        name: authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`,
+        email: authUser.email || '',
+        role: roleFromUrl,
+        totalExp: 0,
+        streak: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const docRef = doc(db, 'users', authUser.uid);
+      setDocumentNonBlocking(docRef, newUser, { merge: true });
+    }
+  }, [authUser, isProfileLoading, profileData, db, roleFromUrl]);
+
   const handleLogout = () => {
     router.push('/');
   };
@@ -52,7 +71,7 @@ function DashboardContent() {
   // Jika tidak ada user (saat redirect), jangan render apa-apa
   if (!authUser) return null;
 
-  // Gunakan data dari Firestore jika ada, atau fallback ke data awal untuk prototyping
+  // Gunakan data dari Firestore jika ada, atau fallback ke data awal
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
     name: authUser.displayName || 'User Falaah',
