@@ -2,13 +2,14 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense, useMemo } from "react";
+import { useEffect, Suspense } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
 import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
+import { Button } from "@/components/ui/button";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -114,7 +115,7 @@ function DashboardContent() {
       <NavHeader user={finalUser} onLogout={handleLogout} />
       
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-12 md:px-8">
-        {/* Kontrol Otoritas Dashboard */}
+        {/* Kontrol Otoritas Dashboard Berdasarkan Role Database */}
         {profileData ? (
           <>
             {finalRole === 'santri' && <SantriDashboard user={finalUser} />}
