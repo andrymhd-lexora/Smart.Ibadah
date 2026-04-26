@@ -2,7 +2,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useMemo } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
@@ -23,7 +23,7 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Data dari URL hanya digunakan sebagai hint saat pendaftaran pertama kali
+  // Hint dari pendaftaran (hanya digunakan jika user belum ada di DB)
   const roleHint = searchParams.get('role') as UserRole;
   const nameHint = searchParams.get('name');
 
@@ -34,21 +34,21 @@ function DashboardContent() {
 
   const { data: profileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Guard 1: Redirect ke login jika tidak ada auth user
+  // Guard: Redirect ke login jika tidak ada auth user
   useEffect(() => {
     if (!isUserLoading && !authUser) {
       router.push('/');
     }
   }, [authUser, isUserLoading, router]);
 
-  // Inisialisasi Profil Baru (Hanya jika belum ada di DB)
+  // Inisialisasi Profil Baru ke Firestore (Hanya sekali saat daftar)
   useEffect(() => {
     if (authUser && !isProfileLoading && !profileData && db && roleHint) {
       const newUser: UserProfile = {
         uid: authUser.uid,
         name: nameHint ? decodeURIComponent(nameHint) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
-        role: roleHint, // Peran dikunci saat registrasi
+        role: roleHint, // Peran dikunci di sini
         totalExp: 0,
         streak: 1,
         whatsapp: '',
@@ -62,8 +62,8 @@ function DashboardContent() {
       setDocumentNonBlocking(docRef, newUser, { merge: true });
       
       toast({
-        title: "Profil Diinisialisasi",
-        description: `Selamat datang pahlawan ${newUser.name}!`,
+        title: "Pahlawan Terdaftar",
+        description: `Selamat datang di Markas Besar, ${newUser.name}!`,
       });
     }
   }, [authUser, isProfileLoading, profileData, db, roleHint, nameHint]);
@@ -72,14 +72,14 @@ function DashboardContent() {
     try {
       await signOut(auth);
       router.push('/');
-      toast({ title: "Berhasil Keluar", description: "Sesi Markas Besar telah diakhiri." });
+      toast({ title: "Berhasil Keluar", description: "Sesi pahlawan telah diakhiri." });
     } catch (error) {
       console.error("Gagal keluar:", error);
     }
   };
 
   if (isUserLoading || isProfileLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Menghubungkan ke Portal Pusat...</p>
@@ -91,7 +91,7 @@ function DashboardContent() {
 
   /**
    * SUMBER KEBENARAN MUTLAK: Peran dari Database (profileData).
-   * Parameter URL diabaikan jika pengguna sudah terdaftar di Firestore.
+   * User tidak bisa pindah jenis dashboard secara manual.
    */
   const finalRole: UserRole = profileData?.role || roleHint || 'santri';
 
@@ -115,7 +115,6 @@ function DashboardContent() {
       <NavHeader user={finalUser} onLogout={handleLogout} />
       
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-12 md:px-8">
-        {/* Kontrol Otoritas Dashboard Berdasarkan Role Database */}
         {profileData ? (
           <>
             {finalRole === 'santri' && <SantriDashboard user={finalUser} />}
@@ -125,11 +124,17 @@ function DashboardContent() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
             <ShieldAlert className="w-16 h-16 text-accent animate-bounce" />
-            <h2 className="text-2xl font-black uppercase tracking-tighter">Otoritas Tidak Terdeteksi</h2>
-            <p className="text-muted-foreground max-w-sm">
-              Sistem sedang mencoba memvalidasi peran pahlawan Anda. Jika pesan ini tidak hilang, silakan masuk ulang.
+            <h2 className="text-2xl font-black uppercase tracking-tighter">Identitas Belum Terverifikasi</h2>
+            <p className="text-muted-foreground max-w-sm text-sm">
+              Sistem sedang memproses sinkronisasi peran pahlawan Anda. Jika pesan ini tidak hilang, silakan masuk ulang.
             </p>
-            <Button variant="outline" onClick={() => router.push('/')} className="mt-4 border-white/10 rounded-xl">Kembali ke Portal Login</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/')} 
+              className="mt-6 border-white/10 rounded-xl hover:bg-white/5"
+            >
+              Kembali ke Portal Login
+            </Button>
           </div>
         )}
       </main>

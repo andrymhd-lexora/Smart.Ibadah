@@ -60,7 +60,7 @@ function ProfileContent() {
     if (!authUser || !db || !profileData) {
       toast({
         variant: "destructive",
-        title: "Gagal Sinkronisasi",
+        title: "Gagal Menyimpan",
         description: "Data pahlawan belum siap.",
       });
       return;
@@ -83,11 +83,11 @@ function ProfileContent() {
     setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "SINKRONISASI BERHASIL",
-        description: "Identitas baru Anda telah diperbarui di seluruh Markas.",
+        title: "Identitas Disimpan",
+        description: "Data pahlawan Anda telah disinkronkan ke seluruh Markas.",
       });
       router.push(`/dashboard`);
-    }, 1200);
+    }, 1000);
   };
 
   const handlePhotoUpload = () => {
@@ -102,8 +102,8 @@ function ProfileContent() {
     }, { merge: true });
 
     toast({
-      title: "Citra Diperbarui",
-      description: "Menghubungkan citra spiritual baru ke profil...",
+      title: "Foto Diperbarui",
+      description: "Menghubungkan citra baru ke profil pahlawan...",
     });
   };
 
@@ -111,7 +111,7 @@ function ProfileContent() {
     try {
       await signOut(auth);
       router.push('/');
-      toast({ title: "Berhasil Keluar", description: "Sesi Markas Besar telah diakhiri." });
+      toast({ title: "Berhasil Keluar", description: "Sesi pahlawan telah diakhiri." });
     } catch (error) {
       console.error("Gagal keluar:", error);
     }
@@ -149,13 +149,12 @@ function ProfileContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Card Kiri: Foto & Status Singkat */}
           <Card className="glass-card border-none bg-card/40 shadow-2xl h-fit overflow-hidden rounded-[2rem]">
             <div className="h-24 bg-gradient-to-r from-primary/30 to-accent/30 shimmer-effect"></div>
             <CardContent className="p-8 text-center space-y-6 -mt-16">
               <div className="relative mx-auto w-40 h-40 group">
                 <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse group-hover:bg-primary/40 transition-all"></div>
-                <Avatar className="w-40 h-40 border-4 border-[#0a0a0c] shadow-2xl relative z-10 transition-transform group-hover:scale-105 duration-500">
+                <Avatar className="w-40 h-40 border-4 border-[#0a0a0c] shadow-2xl relative z-10">
                   <AvatarImage src={formData.photoUrl} className="object-cover" />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-emerald-900 text-white text-5xl font-black">
                     {(formData.name || 'P').charAt(0)}
@@ -163,7 +162,7 @@ function ProfileContent() {
                 </Avatar>
                 <Button 
                   size="icon" 
-                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-[#0a0a0c] z-20 hover:scale-110 transition-all"
+                  className="absolute bottom-2 right-2 rounded-full bg-accent text-white hover:bg-accent/90 shadow-xl border-4 border-[#0a0a0c] z-20"
                   onClick={handlePhotoUpload}
                 >
                   <Camera className="w-5 h-5" />
@@ -176,120 +175,69 @@ function ProfileContent() {
                   {profileData?.role?.toUpperCase() || 'SANTRI'}
                 </Badge>
               </div>
-              <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Power Level</p>
-                  <p className="text-xl font-black text-accent">{profileData?.totalExp?.toLocaleString() || 0}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Streak Misi</p>
-                  <p className="text-xl font-black text-primary">{profileData?.streak || 0} HARI</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Card Kanan: Form Editor Identitas */}
           <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl rounded-[2rem]">
             <CardHeader className="border-b border-white/5 pb-8">
               <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Detail Identitas Pahlawan</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Sinkronkan data spiritual dan administrasi Anda di RTI.</CardDescription>
+              <CardDescription className="text-muted-foreground font-medium">Lengkapi data spiritual dan administrasi Anda di RTI.</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8 pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <Label htmlFor="name" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nama Lengkap (Identitas Utama)</Label>
+                  <Label htmlFor="name" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nama Lengkap</Label>
                   <Input 
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary focus:ring-primary/10 transition-all text-lg"
-                    placeholder="Masukkan nama Anda"
+                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary text-lg"
                   />
                 </div>
                 
                 <div className="space-y-3">
-                  <Label htmlFor="participantId" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor Peserta (ID Unik)</Label>
+                  <Label htmlFor="participantId" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor Peserta (ID)</Label>
                   <div className="relative">
                     <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                     <Input 
                       id="participantId" 
                       value={formData.participantId} 
                       onChange={(e) => setFormData({...formData, participantId: e.target.value})}
-                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
-                      placeholder="Contoh: RTI-1234"
+                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary text-lg"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Email Markas (Terkunci)</Label>
+                  <Label htmlFor="email" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Email (Terkunci)</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
-                    <Input 
-                      id="email" 
-                      value={formData.email} 
-                      disabled
-                      className="h-14 pl-12 bg-white/5 border-white/5 opacity-50 text-white/40 font-bold cursor-not-allowed text-lg"
-                    />
+                    <Input id="email" value={formData.email} disabled className="h-14 pl-12 bg-white/5 border-white/5 text-white/40 font-bold text-lg cursor-not-allowed" />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="whatsapp" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor WhatsApp (Aktif)</Label>
+                  <Label htmlFor="whatsapp" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Nomor WhatsApp</Label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                     <Input 
                       id="whatsapp" 
                       value={formData.whatsapp} 
                       onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary transition-all text-lg"
-                      placeholder="Contoh: 0812..."
+                      className="h-14 pl-12 bg-black/40 border-white/5 rounded-2xl text-white font-bold focus:border-primary text-lg"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="school" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Institusi / Asal Sekolah</Label>
-                  <Input 
-                    id="school" 
-                    placeholder="Contoh: SMP IT Ikhsan"
-                    value={formData.school} 
-                    onChange={(e) => setFormData({...formData, school: e.target.value})}
-                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold text-lg"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="class" className="text-[10px] font-black uppercase text-white/50 tracking-widest ml-1">Kelas / Skuad Operasional</Label>
-                  <Input 
-                    id="class" 
-                    placeholder="Contoh: 9A atau Squad 01"
-                    value={formData.class} 
-                    onChange={(e) => setFormData({...formData, class: e.target.value})}
-                    className="h-14 bg-black/40 border-white/5 rounded-2xl text-white font-bold text-lg"
-                  />
                 </div>
               </div>
 
               <div className="pt-10 border-t border-white/5">
                 <Button 
-                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all text-xl uppercase tracking-widest"
+                  className="w-full bg-primary hover:bg-emerald-600 text-white font-black py-8 rounded-[2rem] gap-4 shadow-lg transition-all text-xl uppercase tracking-widest"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                      MENGAMANKAN DATA...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-8 h-8" />
-                      SIMPAN PERUBAHAN IDENTITAS
-                    </>
-                  )}
+                  {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-8 h-8" /> SIMPAN PERUBAHAN</>}
                 </Button>
               </div>
             </CardContent>
@@ -303,11 +251,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>}>
       <ProfileContent />
     </Suspense>
   );
