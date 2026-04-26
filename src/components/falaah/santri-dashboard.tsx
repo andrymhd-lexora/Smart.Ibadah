@@ -37,7 +37,9 @@ import {
   Heart,
   ChevronRight,
   History,
-  Clock
+  Clock,
+  Search,
+  UserCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { ALL_SURAHS } from "@/lib/quran-data";
 import { HADITS_LIST, DOA_LIST } from "@/lib/hadits-doa-data";
 import { format } from "date-fns";
@@ -67,18 +77,29 @@ interface SantriDashboardProps {
 
 type SantriTab = 'ringkasan' | 'tugas-guru' | 'talaqqi' | 'tahfidz' | 'hadits' | 'doa' | 'mutabaah' | 'rank';
 
+const QORIS = [
+  { id: 'mishary', name: 'Mishary Rashid Alafasy', slug: 'afs', server: 'server8' },
+  { id: 'basit', name: 'AbdulBaset AbdulSamad', slug: 'basit', server: 'server7' },
+  { id: 'shuraim', name: 'Saud Al-Shuraim', slug: 'shur', server: 'server7' },
+  { id: 'minshawi', name: 'Al-Minshawi', slug: 'minsh', server: 'server10' },
+];
+
 export function SantriDashboard({ user }: SantriDashboardProps) {
   const [activeTab, setActiveTab] = useState<SantriTab>('ringkasan');
   const [motivation, setMotivation] = useState<string>("");
   const [loadingMotivation, setLoadingMotivation] = useState(false);
   const db = useFirestore();
 
+  // Murottal States
+  const [selectedQori, setSelectedQori] = useState(QORIS[0]);
   const [playingSurah, setPlayingSurah] = useState<number | null>(null);
+  const [murottalSearch, setMurottalSearch] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const [selectedDate] = useState<Date>(new Date());
   const dateString = format(selectedDate, 'yyyy-MM-dd');
 
+  // Setoran States
   const [selectedItemForSetoran, setSelectedItemForSetoran] = useState<{name: string, type: 'surah' | 'doa'} | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -128,6 +149,22 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     if (activeTab === 'ringkasan' && !motivation) fetchMotivation();
   }, [user.totalExp, expNeeded, nextRank?.name, user.name, activeTab, motivation]);
 
+  // Audio Control
+  const togglePlaySurah = (surahNumber: number) => {
+    if (playingSurah === surahNumber) {
+      audioRef.current?.pause();
+      setPlayingSurah(null);
+    } else {
+      const paddedNumber = surahNumber.toString().padStart(3, '0');
+      const url = `https://${selectedQori.server}.mp3quran.net/${selectedQori.slug}/${paddedNumber}.mp3`;
+      if (audioRef.current) {
+        audioRef.current.src = url;
+        audioRef.current.play();
+        setPlayingSurah(surahNumber);
+      }
+    }
+  };
+
   const handleTogglePrayer = (prayer: string) => {
     if (!db || !user.uid) return;
     const currentPrayers = ibadahLog?.activities?.prayers || [];
@@ -148,7 +185,6 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
 
     setDocumentNonBlocking(logDocRef!, newLog, { merge: true });
     
-    // Update User Total EXP
     const userRef = doc(db, 'users', user.uid);
     setDocumentNonBlocking(userRef, { 
       totalExp: user.totalExp + (currentPrayers.includes(prayer) ? -EXP_VALUES.SHOLAT_WAJIB : EXP_VALUES.SHOLAT_WAJIB),
@@ -224,9 +260,14 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
     { id: 'rank', label: 'Level Hero', icon: Trophy },
   ];
 
+  const filteredMurottal = ALL_SURAHS.filter(s => 
+    s.name.toLowerCase().includes(murottalSearch.toLowerCase()) || 
+    s.number.toString() === murottalSearch
+  );
+
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto">
-      <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} />
+      <audio ref={audioRef} onEnded={() => setPlayingSurah(null)} className="hidden" />
 
       {/* Navigation */}
       <Card className="glass-card border-none bg-black/40 overflow-hidden sticky top-20 z-40 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
@@ -397,26 +438,83 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
 
       {activeTab === 'talaqqi' && (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-           <div className="relative p-8 rounded-[3rem] bg-[#0f172a] border-4 border-primary/30 shadow-[0_0_40px_rgba(16,185,129,0.2)] overflow-hidden">
+           <div className="relative p-10 rounded-[3rem] bg-[#0f172a] border-4 border-primary/30 shadow-[0_0_40px_rgba(16,185,129,0.2)] overflow-hidden">
              <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full"></div>
-             <div className="relative flex flex-col items-center text-center space-y-8">
-               <div className="p-6 rounded-full bg-primary/20 border-2 border-primary/30 animate-pulse">
-                 <Radio className="w-16 h-16 text-primary" />
-               </div>
-               <div className="space-y-2">
-                 <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Radio Murottal Epik</h2>
-                 <p className="text-muted-foreground">Aktifkan frekuensi ketenangan melalui suara Al-Quran.</p>
-               </div>
-               <div className="w-full max-w-md bg-black/40 p-6 rounded-3xl border border-white/5 space-y-6">
-                 <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-white/50 uppercase tracking-widest">Sekarang Memutar</span>
-                    <Badge variant="outline" className="border-primary/50 text-primary">LIVE</Badge>
+             <div className="relative flex flex-col md:flex-row items-center justify-between gap-10">
+               <div className="space-y-6 text-center md:text-left flex-1">
+                 <div className="inline-flex p-4 rounded-full bg-primary/20 border-2 border-primary/30 animate-pulse">
+                   <Radio className="w-12 h-12 text-primary" />
                  </div>
-                 <div className="text-2xl font-black text-white">{playingSurah ? ALL_SURAHS.find(s => s.number === playingSurah)?.name : "Pilih Frekuensi Surat"}</div>
-                 <div className="flex items-center gap-4">
-                   <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full text-white/50"><Volume2 /></Button>
-                   <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                     <div className="h-full bg-primary w-1/3 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                 <div className="space-y-2">
+                   <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Radio Murottal Epik</h2>
+                   <p className="text-muted-foreground">Pilih frekuensi Qori dan dengarkan seluruh 114 surat Al-Quran.</p>
+                 </div>
+                 <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="space-y-1 flex-1">
+                      <label className="text-[10px] font-black uppercase text-white/40 ml-1">Pilih Transmiter Qori</label>
+                      <Select value={selectedQori.id} onValueChange={(val) => {
+                        const q = QORIS.find(q => q.id === val);
+                        if (q) setSelectedQori(q);
+                      }}>
+                        <SelectTrigger className="h-14 bg-black/40 border-white/10 rounded-2xl text-white font-bold">
+                          <SelectValue placeholder="Pilih Qori" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#12141c] border-white/10 text-white">
+                          {QORIS.map(q => (
+                            <SelectItem key={q.id} value={q.id}>{q.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <label className="text-[10px] font-black uppercase text-white/40 ml-1">Cari Frekuensi Surat</label>
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <Input 
+                          placeholder="Nama surat atau nomor..." 
+                          value={murottalSearch}
+                          onChange={(e) => setMurottalSearch(e.target.value)}
+                          className="h-14 pl-12 bg-black/40 border-white/10 rounded-2xl text-white font-bold"
+                        />
+                      </div>
+                    </div>
+                 </div>
+               </div>
+
+               <div className="w-full max-w-sm bg-black/60 p-8 rounded-[2.5rem] border-2 border-white/5 space-y-8 backdrop-blur-xl">
+                 <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">Live Stream</span>
+                    <div className="flex gap-1">
+                      <div className="w-1 h-3 bg-primary animate-bounce"></div>
+                      <div className="w-1 h-5 bg-primary animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-1 h-2 bg-primary animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
+                 </div>
+                 <div className="space-y-2 text-center">
+                    <div className="text-3xl font-black text-white tracking-tighter">
+                      {playingSurah ? ALL_SURAHS.find(s => s.number === playingSurah)?.name : "Standby..."}
+                    </div>
+                    <div className="text-xs font-bold text-muted-foreground uppercase">{selectedQori.name}</div>
+                 </div>
+                 <div className="flex flex-col gap-6">
+                   <div className="flex items-center gap-4">
+                     <Volume2 className="w-5 h-5 text-white/50" />
+                     <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                       <div className="h-full bg-primary w-2/3 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+                     </div>
+                   </div>
+                   <div className="flex justify-center">
+                     <Button 
+                       size="icon" 
+                       className={cn(
+                        "h-20 w-20 rounded-full shadow-2xl transition-all duration-500",
+                        playingSurah ? "bg-primary hover:bg-primary/90 scale-110" : "bg-white/10 hover:bg-white/20"
+                       )}
+                       onClick={() => playingSurah && togglePlaySurah(playingSurah)}
+                       disabled={!playingSurah}
+                     >
+                        {playingSurah ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current" />}
+                     </Button>
                    </div>
                  </div>
                </div>
@@ -424,24 +522,35 @@ export function SantriDashboard({ user }: SantriDashboardProps) {
            </div>
 
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-             {ALL_SURAHS.slice(0, 12).map((surah) => (
-               <Card key={surah.number} className="glass-card border-none bg-card/40 hover:bg-card/60 transition-all cursor-pointer group">
+             {filteredMurottal.map((surah) => (
+               <Card 
+                 key={surah.number} 
+                 className={cn(
+                  "glass-card border-none bg-card/40 hover:bg-card/60 transition-all cursor-pointer group",
+                  playingSurah === surah.number && "ring-2 ring-primary bg-primary/10"
+                 )}
+                 onClick={() => togglePlaySurah(surah.number)}
+               >
                  <CardContent className="p-4 flex items-center justify-between">
                    <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-xs font-black">{surah.number}</div>
+                     <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black transition-colors",
+                      playingSurah === surah.number ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
+                     )}>
+                      {surah.number}
+                     </div>
                      <div>
                        <div className="font-black text-white text-sm">{surah.name}</div>
-                       <div className="text-[10px] text-muted-foreground uppercase">{surah.revelationType}</div>
+                       <div className="text-[10px] text-muted-foreground uppercase">{surah.revelationType} • {surah.totalVerses} Ayat</div>
                      </div>
                    </div>
-                   <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="rounded-full text-primary group-hover:scale-110 transition-transform"
-                    onClick={() => setPlayingSurah(surah.number)}
-                   >
-                     {playingSurah === surah.number ? <Pause className="fill-current" /> : <Play className="fill-current" />}
-                   </Button>
+                   <div className="relative">
+                     {playingSurah === surah.number ? (
+                       <Pause className="w-5 h-5 text-primary fill-current" />
+                     ) : (
+                       <Play className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors fill-current" />
+                     )}
+                   </div>
                  </CardContent>
                </Card>
              ))}
