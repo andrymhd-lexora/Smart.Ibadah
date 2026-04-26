@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
@@ -19,16 +18,16 @@ function DashboardContent() {
   const router = useRouter();
   const db = useFirestore();
   
-  const role = (searchParams.get('role') as UserRole) || 'santri';
+  const roleFromUrl = searchParams.get('role') as UserRole;
 
-  // Redirect ke landing page jika tidak ada user dan tidak sedang loading
+  // Proteksi rute: jika loading selesai dan tidak ada user, kembali ke landing
   useEffect(() => {
     if (!isUserLoading && !authUser) {
       router.push('/');
     }
   }, [isUserLoading, authUser, router]);
 
-  // Fetch real profile from Firestore
+  // Query profil user dari Firestore
   const userDocRef = useMemoFirebase(() => {
     if (!db || !authUser) return null;
     return doc(db, 'users', authUser.uid);
@@ -40,21 +39,25 @@ function DashboardContent() {
     router.push('/');
   };
 
-  if (isUserLoading || isProfileLoading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+  // Tampilkan loader selama proses autentikasi atau fetch profil
+  if (isUserLoading || (authUser && isProfileLoading)) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground animate-pulse">Menghubungkan ke Falaah...</p>
+      </div>
     </div>
   );
 
-  // Jika authUser belum tersedia (saat redirect), jangan render apa-apa agar tidak memicu query Firestore
+  // Jika tidak ada user (saat redirect), jangan render apa-apa
   if (!authUser) return null;
 
-  // Fallback to local profile if document doesn't exist yet for prototyping
+  // Gunakan data dari Firestore jika ada, atau fallback ke data awal untuk prototyping
   const finalUser: UserProfile = profileData || {
     uid: authUser.uid,
     name: authUser.displayName || 'User Falaah',
     email: authUser.email || '',
-    role: role,
+    role: roleFromUrl || 'santri',
     totalExp: 0,
     streak: 0
   };
@@ -63,9 +66,9 @@ function DashboardContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <NavHeader user={finalUser} onLogout={handleLogout} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-8">
-        {role === 'santri' && <SantriDashboard user={finalUser} />}
-        {role === 'ustadz' && <UstadzDashboard user={finalUser} />}
-        {role === 'wali' && <WaliDashboard user={finalUser} />}
+        {finalUser.role === 'santri' && <SantriDashboard user={finalUser} />}
+        {finalUser.role === 'ustadz' && <UstadzDashboard user={finalUser} />}
+        {finalUser.role === 'wali' && <WaliDashboard user={finalUser} />}
       </main>
       <Footer />
     </div>

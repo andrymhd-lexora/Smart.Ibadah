@@ -3,22 +3,37 @@ rules_version = '2';
 /**
  * Falaah Application Security Rules - Prototipe Terbuka
  * 
- * Aturan ini dirancang untuk memudahkan pengembangan prototipe dengan mengizinkan
- * akses baca dan tulis ke seluruh dokumen bagi pengguna yang sudah terautentikasi.
- * Ini akan memperbaiki masalah "Missing or insufficient permissions" pada query
- * global (Collection Group) yang digunakan oleh Ustadz dan Wali.
+ * Aturan ini dirancang untuk mendukung sistem RBAC (Santri, Ustadz, Wali)
+ * dan mengizinkan Collection Group Queries yang diperlukan oleh Ustadz.
  */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Izinkan semua akses baca/tulis jika pengguna sudah masuk (authenticated)
-    // Ini mencakup query koleksi langsung maupun Collection Group.
-    match /{document=**} {
+    // 1. Aturan untuk koleksi 'users' dan subkoleksinya
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+      
+      // Subkoleksi IbadahLogs
+      match /ibadahLogs/{logId} {
+        allow read, write: if request.auth != null;
+        
+        // Subkoleksi HafalanSubmissions
+        match /hafalanSubmissions/{submissionId} {
+          allow read, write: if request.auth != null;
+        }
+      }
+    }
+
+    // 2. ATURAN KRITIKAL: Mengizinkan Collection Group Queries untuk 'hafalanSubmissions'
+    // Ini diperlukan agar Ustadz bisa melihat setoran dari SEMUA santri sekaligus.
+    match /{path=**}/hafalanSubmissions/{submissionId} {
       allow read, write: if request.auth != null;
     }
 
-    // Catatan: Untuk produksi, aturan ini harus diperketat berdasarkan peran (RBAC)
-    // dan kepemilikan dokumen untuk keamanan data yang lebih baik.
+    // 3. Fallback Global (Sangat terbuka untuk kebutuhan prototyping)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

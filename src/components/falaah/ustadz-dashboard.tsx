@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react";
@@ -11,7 +10,8 @@ import {
   Star,
   ExternalLink,
   Filter,
-  Loader2
+  Loader2,
+  Mic
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
-import { collectionGroup, query, doc, orderBy } from "firebase/firestore";
+import { collectionGroup, query, doc, orderBy, where } from "firebase/firestore";
 
 interface UstadzDashboardProps {
   user: UserProfile;
@@ -51,8 +51,11 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
   const db = useFirestore();
 
   // Ambil semua setoran hafalan secara global untuk dashboard ustadz (Collection Group)
+  // Query hanya dijalankan jika authUser sudah tersedia
   const submissionsQuery = useMemoFirebase(() => {
     if (!db || !authUser) return null;
+    
+    // Kita gunakan collectionGroup untuk mengambil 'hafalanSubmissions' dari semua path user
     return query(
       collectionGroup(db, 'hafalanSubmissions'),
       orderBy('submissionDate', 'desc')
