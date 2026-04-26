@@ -2,7 +2,7 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense, useMemo } from "react";
+import { useEffect, Suspense } from "react";
 import { UserRole, UserProfile } from "@/lib/types";
 import { NavHeader } from "@/components/falaah/nav-header";
 import { SantriDashboard } from "@/components/falaah/santri-dashboard";
@@ -10,11 +10,13 @@ import { UstadzDashboard } from "@/components/falaah/ustadz-dashboard";
 import { WaliDashboard } from "@/components/falaah/wali-dashboard";
 import { Footer } from "@/components/falaah/footer";
 import { Loader2 } from "lucide-react";
-import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
 
 function DashboardContent() {
   const { user: authUser, isUserLoading } = useUser();
+  const auth = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const db = useFirestore();
@@ -40,7 +42,7 @@ function DashboardContent() {
     if (authUser && !isProfileLoading && !profileData && db && roleFromUrl) {
       const newUser: UserProfile = {
         uid: authUser.uid,
-        name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Santri ${authUser.uid.slice(0, 4)}`),
+        name: nameFromUrl ? decodeURIComponent(nameFromUrl) : (authUser.displayName || `Pahlawan ${authUser.uid.slice(0, 4)}`),
         email: authUser.email || '',
         role: roleFromUrl,
         totalExp: 0,
@@ -56,15 +58,20 @@ function DashboardContent() {
     }
   }, [authUser, isProfileLoading, profileData, db, roleFromUrl, nameFromUrl]);
 
-  const handleLogout = () => {
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Gagal keluar:", error);
+    }
   };
 
   if (isUserLoading || (authUser && isProfileLoading)) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Menghubungkan ke Falaah...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Mempersiapkan Markas Pahlawan...</p>
       </div>
     </div>
   );
@@ -74,7 +81,7 @@ function DashboardContent() {
   // Nama diprioritaskan dari profileData agar sinkron dengan Firestore
   const finalUser: UserProfile = {
     uid: authUser.uid,
-    name: profileData?.name || (nameFromUrl ? decodeURIComponent(nameFromUrl!) : (authUser.displayName || 'Pahlawan Falaah')),
+    name: profileData?.name || (nameFromUrl ? decodeURIComponent(nameFromUrl!) : (authUser.displayName || 'Pahlawan')),
     email: profileData?.email || authUser.email || '',
     role: profileData?.role || roleFromUrl || 'santri',
     totalExp: profileData?.totalExp || 0,

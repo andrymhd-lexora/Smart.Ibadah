@@ -14,11 +14,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
 
 function ProfileContent() {
   const { user: authUser, isUserLoading } = useUser();
+  const auth = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const db = useFirestore();
@@ -62,21 +64,23 @@ function ProfileContent() {
     setIsSaving(true);
     const docRef = doc(db, 'users', authUser.uid);
     
-    // Gunakan setDocumentNonBlocking dengan merge: true agar data EXP dll tidak hilang
-    setDocumentNonBlocking(docRef, {
+    // Simpan ke Firestore dengan merge: true
+    const updatedData = {
       ...formData,
       uid: authUser.uid,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    };
 
-    // Simulasi delay untuk feedback UX
+    setDocumentNonBlocking(docRef, updatedData, { merge: true });
+
+    // Feedback instan ke user
     setTimeout(() => {
       setIsSaving(false);
       toast({
         title: "Identitas Disinkronkan",
         description: "Data pahlawan Anda telah berhasil diamankan di database pusat.",
       });
-    }, 800);
+    }, 1000);
   };
 
   const handlePhotoUpload = () => {
@@ -96,8 +100,13 @@ function ProfileContent() {
     });
   };
 
-  const handleLogout = () => {
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Gagal keluar:", error);
+    }
   };
 
   if (isUserLoading || (authUser && isProfileLoading)) return (
@@ -113,7 +122,7 @@ function ProfileContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <NavHeader user={profileData || { name: formData.name || 'Pahlawan', totalExp: 0, streak: 0, role: roleFromUrl } as any} onLogout={handleLogout} />
+      <NavHeader user={(profileData || { ...formData, role: roleFromUrl, totalExp: 0, streak: 0 }) as any} onLogout={handleLogout} />
       
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-12 md:px-8">
         <div className="mb-8 flex items-center justify-between">
@@ -152,9 +161,9 @@ function ProfileContent() {
                 </Button>
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Nama Belum Diatur'}</h2>
+                <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Pahlawan'}</h2>
                 <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-4 py-1">
-                  {roleFromUrl}
+                  {profileData?.role || roleFromUrl}
                 </Badge>
               </div>
               <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
