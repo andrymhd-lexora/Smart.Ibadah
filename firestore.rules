@@ -1,21 +1,20 @@
 rules_version = '2';
 
 /**
- * Falaah Application Security Rules - Development Mode
- * Aturan ini dikonfigurasi untuk mengizinkan akses penuh bagi pengguna terautentikasi.
- * Ini mencakup dukungan penuh untuk Collection Group Queries yang digunakan di Dashboard Ustadz.
+ * Aturan Keamanan Falaah - Perbaikan Menyeluruh
+ * Mengizinkan akses penuh bagi pengguna yang sudah login (termasuk anonim).
+ * Aturan ini mencakup standar query dan Collection Group query.
  */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Izinkan akses rekursif penuh untuk semua dokumen dan sub-koleksi
-    // Hal ini memastikan query global (Collection Group) tidak terhalang.
+    // IZIN UTAMA: Izinkan baca dan tulis di seluruh tingkat dokumen
+    // asalkan request berasal dari pengguna yang terautentikasi.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
     
-    // Deployment trigger comment: Jalankan ulang aturan untuk memastikan perubahan diterapkan.
-    // Last Update: 2024-03-20 
+    // Deployment ID: REFRESH_PERMISSION_V2_2024
   }
 }

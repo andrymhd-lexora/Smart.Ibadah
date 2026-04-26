@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from "@/firebase";
-import { collectionGroup, query, doc, orderBy, where } from "firebase/firestore";
+import { collectionGroup, query, doc } from "firebase/firestore";
 
 interface UstadzDashboardProps {
   user: UserProfile;
@@ -50,29 +50,24 @@ export function UstadzDashboard({ user }: UstadzDashboardProps) {
   const [verificationNote, setVerificationNote] = useState("");
   const db = useFirestore();
 
-  // Ambil semua setoran hafalan secara global untuk dashboard ustadz (Collection Group)
-  // Query hanya dijalankan jika authUser sudah tersedia
+  // Query global untuk mengambil semua setoran hafalan (tanpa orderBy untuk menghindari error izin/indeks)
   const submissionsQuery = useMemoFirebase(() => {
     if (!db || !authUser) return null;
-    
-    // Kita gunakan collectionGroup untuk mengambil 'hafalanSubmissions' dari semua path user
-    return query(
-      collectionGroup(db, 'hafalanSubmissions'),
-      orderBy('submissionDate', 'desc')
-    );
+    return collectionGroup(db, 'hafalanSubmissions');
   }, [db, authUser]);
 
   const { data: submissions, isLoading } = useCollection<HafalanSubmission>(submissionsQuery);
 
-  const filteredSubmissions = (submissions || []).filter(s => 
-    (s.santriName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.hafalanContent.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredSubmissions = (submissions || [])
+    .sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime())
+    .filter(s => 
+      (s.santriName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.hafalanContent.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
   const handleVerify = (status: 'VERIFIED' | 'REVISED', bonus = false) => {
     if (!selectedSubmission || !db || !authUser) return;
 
-    // Path dokumen: /users/{santriId}/ibadahLogs/{logId}/hafalanSubmissions/{subId}
     const docRef = doc(db, `users/${selectedSubmission.santriId}/ibadahLogs/${selectedSubmission.ibadahLogId}/hafalanSubmissions`, (selectedSubmission as any).id);
 
     updateDocumentNonBlocking(docRef, {
