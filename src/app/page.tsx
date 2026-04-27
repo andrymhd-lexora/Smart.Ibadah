@@ -2,32 +2,30 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { UserRole } from "@/lib/types";
+import { UserRole, UserProfile } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { 
-  ShieldCheck, 
-  BookOpen, 
-  Users, 
-  ArrowRight,
-  Flame,
-  CheckCircle2,
-  Loader2,
-  UserPlus,
-  LogIn,
-  Sparkles
+  Flame, 
+  CheckCircle2, 
+  Loader2, 
+  UserPlus, 
+  LogIn, 
+  Sparkles 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useUser } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
+import { useAuth, useUser, useFirestore } from "@/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function LandingPage() {
   const router = useRouter();
   const auth = useAuth();
+  const db = useFirestore();
   const { user: authUser, isUserLoading } = useUser();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -64,14 +62,34 @@ export default function LandingPage() {
           setIsLoadingAction(false);
           return;
         }
-        // Proses Pendaftaran
-        await createUserWithEmailAndPassword(auth, email, password);
+
+        // 1. Buat User Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 2. Langsung Kunci Peran ke Firestore (PENTING!)
+        const newUser: UserProfile = {
+          uid: user.uid,
+          name: name,
+          email: email,
+          role: role,
+          totalExp: 0,
+          streak: 1,
+          whatsapp: '',
+          participantId: `RTI-${Math.floor(1000 + Math.random() * 9000)}`,
+          linkedStudentIds: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        await setDoc(doc(db, 'users', user.uid), newUser);
+
         toast({
           title: "Inisialisasi Berhasil",
-          description: "Identitas pahlawan Anda sedang didaftarkan ke sistem.",
+          description: `Selamat datang pahlawan ${name}! Markas sedang disiapkan.`,
         });
       } else {
-        // Proses Login
+        // Proses Login Standar
         await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: "Akses Diterima",
@@ -79,9 +97,7 @@ export default function LandingPage() {
         });
       }
 
-      // Kirim parameter role sebagai hint untuk inisialisasi awal di dashboard
-      const query = `?role=${role}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
-      router.push(`/dashboard${query}`);
+      router.push('/dashboard');
     } catch (error: any) {
       let message = "Terjadi gangguan pada portal pusat.";
       
@@ -103,30 +119,14 @@ export default function LandingPage() {
     }
   };
 
-  const handleAnonymous = async (selectedRole: UserRole) => {
-    setIsLoadingAction(true);
-    try {
-      await signInAnonymously(auth);
-      router.push(`/dashboard?role=${selectedRole}`);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Gagal Masuk Tamu",
-        description: "Portal tamu sedang dalam pemeliharaan.",
-      });
-      setIsLoadingAction(false);
-    }
-  };
-
   if (isUserLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
       <Loader2 className="w-12 h-12 animate-spin text-primary" />
     </div>
   );
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-[#0a0a0c]">
-      {/* Background Orbs */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full -z-10 animate-pulse [animation-delay:1s]"></div>
 
@@ -208,20 +208,6 @@ export default function LandingPage() {
                         {mode === "login" ? "MASUK MARKAS" : "GABUNG SEKARANG"}
                       </>
                     )}
-                  </Button>
-
-                  <div className="relative py-4">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-[#12141c] px-2 text-muted-foreground tracking-[0.3em]">Mode Tamu</span></div>
-                  </div>
-
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-white/30 hover:text-white hover:bg-white/5 rounded-xl h-12 uppercase font-black text-[10px] tracking-widest" 
-                    onClick={() => handleAnonymous(role)}
-                    disabled={isLoadingAction}
-                  >
-                    Masuk Sebagai Tamu Sementara
                   </Button>
 
                   <div className="text-center pt-4">

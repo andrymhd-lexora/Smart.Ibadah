@@ -14,8 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, ArrowLeft, Loader2, Phone, Hash, Mail, Sparkles, Shield } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
 function ProfileContent() {
@@ -56,7 +56,7 @@ function ProfileContent() {
     }
   }, [profileData, authUser]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!authUser || !db || !profileData) {
       toast({
         variant: "destructive",
@@ -67,51 +67,62 @@ function ProfileContent() {
     }
     
     setIsSaving(true);
-    const docRef = doc(db, 'users', authUser.uid);
-    
-    // PERAN (ROLE) DI DATABASE TIDAK BOLEH DIUBAH USER
-    const updatedData = {
-      ...formData,
-      uid: authUser.uid,
-      role: profileData.role, 
-      updatedAt: new Date().toISOString()
-    };
+    try {
+      const docRef = doc(db, 'users', authUser.uid);
+      
+      // PERAN (ROLE) DI DATABASE TIDAK BOLEH DIUBAH USER
+      const updatedData: UserProfile = {
+        ...profileData,
+        ...formData,
+        uid: authUser.uid,
+        role: profileData.role, 
+        updatedAt: new Date().toISOString()
+      };
 
-    // Gunakan Set & Merge untuk keamanan data tertinggi
-    setDocumentNonBlocking(docRef, updatedData, { merge: true });
+      // Gunakan setDoc dengan merge untuk memastikan data tersimpan 100%
+      await setDoc(docRef, updatedData, { merge: true });
 
-    setTimeout(() => {
-      setIsSaving(false);
       toast({
         title: "Identitas Disimpan",
         description: "Data pahlawan Anda telah disinkronkan ke seluruh Markas.",
       });
       router.push(`/dashboard`);
-    }, 1000);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Sinkron",
+        description: "Gagal menghubungkan ke database pusat.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handlePhotoUpload = () => {
-    if (!authUser || !db) return;
+  const handlePhotoUpload = async () => {
+    if (!authUser || !db || !profileData) return;
     const mockPhotoUrl = `https://picsum.photos/seed/${authUser.uid}/400/400`;
-    setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
     
-    const docRef = doc(db, 'users', authUser.uid);
-    setDocumentNonBlocking(docRef, {
-      photoUrl: mockPhotoUrl,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    try {
+      const docRef = doc(db, 'users', authUser.uid);
+      await setDoc(docRef, {
+        photoUrl: mockPhotoUrl,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
-    toast({
-      title: "Foto Diperbarui",
-      description: "Menghubungkan citra baru ke profil pahlawan...",
-    });
+      setFormData(prev => ({ ...prev, photoUrl: mockPhotoUrl }));
+      toast({
+        title: "Foto Diperbarui",
+        description: "Menghubungkan citra baru ke profil pahlawan...",
+      });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Gagal", description: "Gagal memperbarui foto." });
+    }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
       router.push('/');
-      toast({ title: "Berhasil Keluar", description: "Sesi pahlawan telah diakhiri." });
     } catch (error) {
       console.error("Gagal keluar:", error);
     }
@@ -119,10 +130,7 @@ function ProfileContent() {
 
   if (isUserLoading || (authUser && isProfileLoading)) return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Mengambil Arsip Pahlawan...</p>
-      </div>
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
     </div>
   );
 
@@ -170,7 +178,7 @@ function ProfileContent() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-headline font-black text-white">{formData.name || 'Pahlawan'}</h2>
-                <Badge variant="secondary" className="bg-primary/20 text-primary uppercase font-black text-[10px] px-6 py-1.5 flex items-center gap-1 mx-auto w-fit rounded-full border border-primary/20">
+                <Badge variant="outline" className="border-primary/30 text-primary uppercase font-black text-[10px] px-6 py-1.5 flex items-center gap-1 mx-auto w-fit rounded-full">
                   <Shield className="w-3 h-3" />
                   {profileData?.role?.toUpperCase() || 'SANTRI'}
                 </Badge>
@@ -180,8 +188,8 @@ function ProfileContent() {
 
           <Card className="lg:col-span-2 glass-card border-none bg-card/40 shadow-2xl rounded-[2rem]">
             <CardHeader className="border-b border-white/5 pb-8">
-              <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Detail Identitas Pahlawan</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium">Lengkapi data spiritual dan administrasi Anda di RTI.</CardDescription>
+              <CardTitle className="text-3xl font-headline font-black text-white tracking-tighter uppercase">Detail Identitas</CardTitle>
+              <CardDescription className="text-muted-foreground font-medium">Lengkapi data spiritual dan administrasi Anda.</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8 pt-8">
