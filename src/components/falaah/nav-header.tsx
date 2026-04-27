@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo } from "react";
@@ -30,7 +31,7 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
     <header className="sticky top-0 z-50 w-full glass-card border-b bg-background/80 px-4 py-3 md:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <Link 
-          href={`/dashboard?role=${user.role}`}
+          href="/dashboard"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="bg-primary/20 p-2 rounded-lg">
@@ -69,14 +70,14 @@ export function NavHeader({ user, onLogout }: NavHeaderProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="flex items-center gap-2 cursor-pointer"
-                onClick={() => router.push(`/profile?role=${user.role}`)}
+                onClick={() => router.push('/profile')}
               >
                 <User className="w-4 h-4" />
                 <span>Profil & Biodata</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="flex items-center gap-2 cursor-pointer"
-                onClick={() => router.push(`/dashboard?role=${user.role}`)}
+                onClick={() => router.push('/dashboard')}
               >
                 <Home className="w-4 h-4" />
                 <span>Dashboard</span>
