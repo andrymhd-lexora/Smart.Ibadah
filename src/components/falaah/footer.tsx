@@ -8,8 +8,11 @@ export function Footer() {
   const handleDonate = () => {
     toast({
       title: "Niat Mulia Terdeteksi!",
-      description: "Terima kasih atas semangat pahlawanmu. Portal donasi sedang disiapkan oleh Markas Besar.",
+      description: "Membuka portal donasi Markas Besar. Terima kasih atas semangat pahlawanmu!",
     });
+    
+    // Membuka link donasi di tab baru
+    window.open("http://lynk.id/lexorabizhub/plxk099wd431/checkout", "_blank");
   };
 
   return (
